@@ -1,0 +1,62 @@
+"""Message composer — uses LLM to generate personalized outreach messages."""
+
+from __future__ import annotations
+
+import logging
+
+from growthclaw.llm.client import LLMClient, render_template
+from growthclaw.models.profile import IntelligenceBrief
+from growthclaw.models.schema_map import BusinessConcepts
+from growthclaw.models.trigger import TriggerRule
+
+logger = logging.getLogger("growthclaw.outreach.message_composer")
+
+SMS_MAX_LENGTH = 160
+MAX_SMS_RETRIES = 2
+
+
+async def compose(
+    trigger: TriggerRule,
+    profile_data: dict,
+    intelligence_brief: IntelligenceBrief,
+    concepts: BusinessConcepts,
+    llm_client: LLMClient,
+    cta_link: str = "",
+    business_name: str = "",
+) -> str:
+    """Generate a personalized message using LLM based on trigger context and customer profile."""
+    prompt = render_template(
+        "compose_message.j2",
+        channel=trigger.channel,
+        business_name=business_name or concepts.business_description,
+        business_type=concepts.business_type,
+        business_description=concepts.business_description,
+        trigger_context=trigger.message_context,
+        trigger_description=trigger.description,
+        profile_data=profile_data,
+        intelligence_brief=intelligence_brief.model_dump(mode="json"),
+        cta_link=cta_link,
+    )
+
+    message = await llm_client.call(prompt, temperature=0.7, max_tokens=500)
+    message = message.strip().strip('"').strip("'")
+
+    # For SMS, enforce 160 char limit
+    if trigger.channel == "sms" and len(message) > SMS_MAX_LENGTH:
+        for _ in range(MAX_SMS_RETRIES):
+            logger.warning("SMS message too long (%d chars), re-prompting LLM", len(message))
+            retry_prompt = (
+                f"This SMS message is {len(message)} characters but must be under {SMS_MAX_LENGTH}. "
+                f"Shorten it while keeping the CTA link and key message:\n\n{message}"
+            )
+            message = await llm_client.call(retry_prompt, temperature=0.5, max_tokens=200)
+            message = message.strip().strip('"').strip("'")
+            if len(message) <= SMS_MAX_LENGTH:
+                break
+
+        if len(message) > SMS_MAX_LENGTH:
+            logger.warning("SMS still too long after retries (%d chars), truncating", len(message))
+            message = message[: SMS_MAX_LENGTH - 3] + "..."
+
+    logger.info("Composed %s message (%d chars) for trigger %s", trigger.channel, len(message), trigger.name)
+    return message

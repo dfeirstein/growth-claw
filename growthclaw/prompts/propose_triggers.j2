@@ -1,0 +1,39 @@
+You are designing real-time marketing triggers for a {{ business_type }}.
+
+BUSINESS: {{ business_description }}
+FUNNEL: {{ funnel | tojson(indent=2) }}
+CONCEPT MAP: {{ concepts | tojson(indent=2) }}
+BIGGEST DROPOFF: {{ biggest_dropoff | tojson(indent=2) }}
+
+Propose 3-5 trigger rules, prioritized by expected revenue impact.
+For each trigger, generate the ACTUAL SQL that GrowthClaw will use.
+Use $1 as the customer ID placeholder in all SQL.
+
+Respond with a JSON array:
+[
+  {
+    "name": "snake_case_name",
+    "description": "Human-readable description",
+    "priority": 1,
+    "watch_table": "table to watch for changes",
+    "watch_event": "INSERT or UPDATE",
+    "watch_condition": "SQL condition on NEW row, or null",
+    "delay_minutes": number,
+    "check_sql": "SQL returning TRUE if the user still hasn't done the thing — use $1 for user_id",
+    "profile_queries": [
+      {
+        "name": "descriptive_name",
+        "sql": "SELECT ... FROM ... WHERE user_id = $1 OR similar",
+        "description": "what this query retrieves"
+      }
+    ],
+    "message_context": "Context string for the LLM when composing the message. Describe the situation, what we know, and what we want the user to do.",
+    "channel": "sms or email",
+    "user_id_source": "How to extract user_id from the CDC event — e.g., 'NEW.id' for users table, 'NEW.user_id' for others",
+    "expected_audience_per_week": number,
+    "expected_conversion_lift": "low | medium | high",
+    "reasoning": "Why this trigger, why this timing"
+  }
+]
+
+Return ONLY a valid JSON array. No explanation, no markdown fences.

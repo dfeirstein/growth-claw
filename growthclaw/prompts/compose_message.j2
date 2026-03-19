@@ -1,0 +1,26 @@
+You are writing a single {{ channel }} message to a customer of {{ business_name }},
+a {{ business_type }} business: {{ business_description }}.
+
+SITUATION: {{ trigger_context }}
+
+CUSTOMER PROFILE:
+{{ profile_data | tojson(indent=2) }}
+
+INTELLIGENCE BRIEF:
+{{ intelligence_brief | tojson(indent=2) }}
+
+RULES:
+{% if channel == 'sms' %}
+- Under 160 characters total (STRICT — count carefully)
+- Include the CTA link: {{ cta_link }}
+{% elif channel == 'email' %}
+- Write subject line + 3-5 sentence body
+{% endif %}
+- Sound like a helpful human, not a marketing bot
+- Reference specific things we know about them from the profile
+- DO NOT mention AI, algorithms, or data analysis
+- DO NOT use ALL CAPS or excessive punctuation
+- Match the urgency: this person {{ trigger_description | lower }}
+- Use their name if available
+
+Return ONLY the message text. Nothing else.

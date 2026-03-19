@@ -1,0 +1,94 @@
+{
+  "tables": [
+    {
+      "name": "users",
+      "row_count": 32000,
+      "columns": [
+        {"name": "id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": "gen_random_uuid()", "character_maximum_length": null, "sample_values": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890", "b2c3d4e5-f6a7-8901-bcde-f12345678901"], "null_rate": 0.0, "distinct_count": 32000},
+        {"name": "email", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 255, "sample_values": ["jane@acmecorp.com", "john@startup.io", "dev@bigco.net"], "null_rate": 0.0, "distinct_count": 32000},
+        {"name": "full_name", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "YES", "column_default": null, "character_maximum_length": 200, "sample_values": ["Jane Doe", "John Smith", "Dev Patel"], "null_rate": 0.05, "distinct_count": 31200},
+        {"name": "phone", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "YES", "column_default": null, "character_maximum_length": 20, "sample_values": ["+14155551234", "+442071234567", null], "null_rate": 0.40, "distinct_count": 19200},
+        {"name": "sms_consent", "data_type": "boolean", "udt_name": "bool", "is_nullable": "NO", "column_default": "false", "character_maximum_length": null, "sample_values": ["true", "false", "false"], "null_rate": 0.0, "distinct_count": 2},
+        {"name": "role", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": "'member'", "character_maximum_length": 30, "sample_values": ["admin", "member", "owner", "viewer"], "null_rate": 0.0, "distinct_count": 4},
+        {"name": "organization_id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["org-uuid-1", "org-uuid-2", null], "null_rate": 0.08, "distinct_count": 5400},
+        {"name": "last_login_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["2024-12-01T09:00:00Z", "2024-12-10T14:30:00Z", null], "null_rate": 0.12, "distinct_count": 28100},
+        {"name": "created_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "NO", "column_default": "now()", "character_maximum_length": null, "sample_values": ["2023-01-10T08:00:00Z", "2023-06-15T12:00:00Z", "2024-01-01T00:00:00Z"], "null_rate": 0.0, "distinct_count": 31800},
+        {"name": "deleted_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": [null, null, "2024-10-01T00:00:00Z"], "null_rate": 0.95, "distinct_count": 1600}
+      ],
+      "primary_keys": ["id"],
+      "foreign_keys": [
+        {"column": "organization_id", "references_table": "organizations", "references_column": "id"}
+      ]
+    },
+    {
+      "name": "organizations",
+      "row_count": 5400,
+      "columns": [
+        {"name": "id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": "gen_random_uuid()", "character_maximum_length": null, "sample_values": ["org-uuid-1", "org-uuid-2"], "null_rate": 0.0, "distinct_count": 5400},
+        {"name": "name", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 255, "sample_values": ["Acme Corp", "Startup Inc", "BigCo Ltd"], "null_rate": 0.0, "distinct_count": 5400},
+        {"name": "slug", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 100, "sample_values": ["acme-corp", "startup-inc", "bigco-ltd"], "null_rate": 0.0, "distinct_count": 5400},
+        {"name": "plan", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": "'free'", "character_maximum_length": 30, "sample_values": ["free", "starter", "pro", "enterprise"], "null_rate": 0.0, "distinct_count": 4},
+        {"name": "seats_limit", "data_type": "integer", "udt_name": "int4", "is_nullable": "NO", "column_default": "5", "character_maximum_length": null, "sample_values": ["5", "10", "25", "100"], "null_rate": 0.0, "distinct_count": 8},
+        {"name": "industry", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "YES", "column_default": null, "character_maximum_length": 100, "sample_values": ["Technology", "Healthcare", "Finance", null], "null_rate": 0.30, "distinct_count": 22},
+        {"name": "created_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "NO", "column_default": "now()", "character_maximum_length": null, "sample_values": ["2023-01-05T00:00:00Z", "2023-07-20T00:00:00Z"], "null_rate": 0.0, "distinct_count": 5350}
+      ],
+      "primary_keys": ["id"],
+      "foreign_keys": []
+    },
+    {
+      "name": "subscriptions",
+      "row_count": 4800,
+      "columns": [
+        {"name": "id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": "gen_random_uuid()", "character_maximum_length": null, "sample_values": ["sub-uuid-1", "sub-uuid-2"], "null_rate": 0.0, "distinct_count": 4800},
+        {"name": "organization_id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["org-uuid-1", "org-uuid-2"], "null_rate": 0.0, "distinct_count": 4200},
+        {"name": "plan_name", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 50, "sample_values": ["starter", "pro", "enterprise"], "null_rate": 0.0, "distinct_count": 3},
+        {"name": "status", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": "'active'", "character_maximum_length": 20, "sample_values": ["active", "cancelled", "past_due", "trialing"], "null_rate": 0.0, "distinct_count": 4},
+        {"name": "amount_cents", "data_type": "integer", "udt_name": "int4", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["2900", "9900", "29900"], "null_rate": 0.0, "distinct_count": 6},
+        {"name": "billing_interval", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": "'monthly'", "character_maximum_length": 20, "sample_values": ["monthly", "yearly"], "null_rate": 0.0, "distinct_count": 2},
+        {"name": "current_period_start", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["2024-12-01T00:00:00Z", "2024-11-15T00:00:00Z"], "null_rate": 0.02, "distinct_count": 365},
+        {"name": "current_period_end", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["2025-01-01T00:00:00Z", "2024-12-15T00:00:00Z"], "null_rate": 0.02, "distinct_count": 365},
+        {"name": "created_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "NO", "column_default": "now()", "character_maximum_length": null, "sample_values": ["2023-03-01T00:00:00Z", "2024-01-15T00:00:00Z"], "null_rate": 0.0, "distinct_count": 4700},
+        {"name": "cancelled_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": [null, null, "2024-09-01T00:00:00Z"], "null_rate": 0.78, "distinct_count": 1050}
+      ],
+      "primary_keys": ["id"],
+      "foreign_keys": [
+        {"column": "organization_id", "references_table": "organizations", "references_column": "id"}
+      ]
+    },
+    {
+      "name": "invoices",
+      "row_count": 28500,
+      "columns": [
+        {"name": "id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": "gen_random_uuid()", "character_maximum_length": null, "sample_values": ["inv-uuid-1", "inv-uuid-2"], "null_rate": 0.0, "distinct_count": 28500},
+        {"name": "subscription_id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["sub-uuid-1", "sub-uuid-2"], "null_rate": 0.0, "distinct_count": 4200},
+        {"name": "organization_id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["org-uuid-1", "org-uuid-2"], "null_rate": 0.0, "distinct_count": 4200},
+        {"name": "amount_cents", "data_type": "integer", "udt_name": "int4", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["2900", "9900", "29900"], "null_rate": 0.0, "distinct_count": 12},
+        {"name": "status", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": "'pending'", "character_maximum_length": 20, "sample_values": ["paid", "pending", "failed", "refunded"], "null_rate": 0.0, "distinct_count": 4},
+        {"name": "due_date", "data_type": "date", "udt_name": "date", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["2024-12-15", "2025-01-01"], "null_rate": 0.01, "distinct_count": 730},
+        {"name": "paid_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["2024-12-01T10:00:00Z", null], "null_rate": 0.15, "distinct_count": 24200},
+        {"name": "created_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "NO", "column_default": "now()", "character_maximum_length": null, "sample_values": ["2024-01-01T00:00:00Z", "2024-02-01T00:00:00Z"], "null_rate": 0.0, "distinct_count": 28400}
+      ],
+      "primary_keys": ["id"],
+      "foreign_keys": [
+        {"column": "subscription_id", "references_table": "subscriptions", "references_column": "id"},
+        {"column": "organization_id", "references_table": "organizations", "references_column": "id"}
+      ]
+    },
+    {
+      "name": "feature_usage",
+      "row_count": 520000,
+      "columns": [
+        {"name": "id", "data_type": "bigint", "udt_name": "int8", "is_nullable": "NO", "column_default": "nextval('feature_usage_id_seq'::regclass)", "character_maximum_length": null, "sample_values": ["1", "2", "3"], "null_rate": 0.0, "distinct_count": 520000},
+        {"name": "user_id", "data_type": "uuid", "udt_name": "uuid", "is_nullable": "NO", "column_default": null, "character_maximum_length": null, "sample_values": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890"], "null_rate": 0.0, "distinct_count": 28000},
+        {"name": "feature_name", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 100, "sample_values": ["dashboard_view", "report_export", "api_call", "team_invite", "integration_setup"], "null_rate": 0.0, "distinct_count": 35},
+        {"name": "action", "data_type": "character varying", "udt_name": "varchar", "is_nullable": "NO", "column_default": null, "character_maximum_length": 50, "sample_values": ["click", "create", "view", "delete", "export"], "null_rate": 0.0, "distinct_count": 8},
+        {"name": "metadata", "data_type": "jsonb", "udt_name": "jsonb", "is_nullable": "YES", "column_default": null, "character_maximum_length": null, "sample_values": ["{\"source\": \"web\"}", "{\"duration_ms\": 1200}", null], "null_rate": 0.35, "distinct_count": 180000},
+        {"name": "created_at", "data_type": "timestamp with time zone", "udt_name": "timestamptz", "is_nullable": "NO", "column_default": "now()", "character_maximum_length": null, "sample_values": ["2024-12-01T09:00:00Z", "2024-12-01T09:05:00Z"], "null_rate": 0.0, "distinct_count": 510000}
+      ],
+      "primary_keys": ["id"],
+      "foreign_keys": [
+        {"column": "user_id", "references_table": "users", "references_column": "id"}
+      ]
+    }
+  ]
+}

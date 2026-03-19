@@ -1,0 +1,27 @@
+You are generating SQL queries to build a complete customer profile.
+
+BUSINESS: {{ business_type }} — {{ business_description }}
+CONCEPT MAP: {{ concepts | tojson(indent=2) }}
+TRIGGER CONTEXT: {{ trigger_context }}
+
+Generate SQL queries that will retrieve all relevant data about a specific customer
+to build a 360° profile. Use $1 as the customer ID placeholder.
+
+The queries should cover:
+1. Basic customer information (name, email, phone, signup date, status)
+2. Activation status and history
+3. Transaction history and spending patterns
+4. Subscription status (if applicable)
+5. Attribution/acquisition source (if applicable)
+6. Any other relevant profile data from additional tables
+
+Respond with a JSON array:
+[
+  {
+    "name": "descriptive_name",
+    "sql": "SELECT ... FROM ... WHERE column = $1",
+    "description": "what this query retrieves"
+  }
+]
+
+Return ONLY a valid JSON array. No explanation, no markdown fences.

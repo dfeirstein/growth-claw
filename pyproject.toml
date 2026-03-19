@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "growthclaw"
+version = "0.1.0"
+description = "AI marketing engine that learns any business from its database"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.13.1",
+    "APScheduler>=3.11.2,<4.0",
+    "twilio>=9.10.3",
+    "httpx>=0.28.1",
+    "anthropic>=0.52.0",
+    "Jinja2>=3.1.6",
+    "click>=8.1.7",
+    "python-dotenv>=1.0.1",
+    "structlog>=24.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.25.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+    "pytest-mock>=3.14.0",
+]
+
+[project.scripts]
+growthclaw = "growthclaw.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["growthclaw*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["growthclaw/tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

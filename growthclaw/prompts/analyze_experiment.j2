@@ -1,0 +1,26 @@
+You are analyzing A/B test results for a marketing trigger.
+
+EXPERIMENT: {{ experiment_name }}
+VARIABLE: {{ variable }} (what we're testing)
+METRIC: {{ metric }}
+
+RESULTS:
+{% for arm in arms %}
+- Arm "{{ arm.arm_name }}": {{ arm.total_sent }} sent, {{ arm.total_converted }} converted ({{ arm.conversion_rate | round(3) }}% conversion rate)
+{% endfor %}
+
+TOTAL SAMPLE SIZE: {{ total_sent }}
+DURATION: {{ duration_days }} days
+
+Analyze these results and provide a recommendation.
+
+Respond with JSON:
+{
+  "winner": "arm name or 'inconclusive'",
+  "confidence": "low | medium | high",
+  "recommendation": "What to do next — keep running, declare winner, or adjust",
+  "analysis": "2-3 sentence explanation of the results",
+  "suggested_next_experiment": "Description of a follow-up experiment, or null"
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.

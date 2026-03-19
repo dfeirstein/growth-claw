@@ -1,0 +1,41 @@
+You are analyzing a business's customer lifecycle funnel.
+
+BUSINESS: {{ business_type }} — {{ business_description }}
+
+CONCEPT MAP:
+{{ concepts | tojson(indent=2) }}
+
+DATA STATISTICS:
+- Total customers: {{ customer_count }}
+- Customers with activation ({{ activation_event }}): {{ activated_count }} ({{ activation_rate }}%)
+- Customers with transactions: {{ transacted_count }}
+- Customers with subscriptions: {{ subscribed_count }}
+- Customers with SMS consent: {{ sms_consent_count }}
+
+TIME ANALYSIS:
+{{ time_to_activation_distribution | tojson(indent=2) }}
+
+Respond with JSON:
+{
+  "funnel_stages": [
+    {"name": "string", "table": "string", "event": "string", "count": number, "description": "string"}
+  ],
+  "biggest_dropoff": {
+    "from_stage": "string",
+    "to_stage": "string",
+    "conversion_rate": number,
+    "lost_customers": number,
+    "description": "string — explain the business impact"
+  },
+  "activation_window": {
+    "optimal_minutes": number,
+    "reasoning": "string — based on the time-to-activation distribution"
+  },
+  "reachability": {
+    "sms_reachable_in_dropoff": number,
+    "email_reachable_in_dropoff": number,
+    "push_reachable_in_dropoff": number
+  }
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.

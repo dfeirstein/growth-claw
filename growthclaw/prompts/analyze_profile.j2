@@ -1,0 +1,23 @@
+You are analyzing a customer profile to produce an intelligence brief.
+
+BUSINESS: {{ business_name }}, a {{ business_type }}: {{ business_description }}
+
+CUSTOMER DATA:
+{{ profile_data | tojson(indent=2) }}
+
+TRIGGER CONTEXT: {{ trigger_context }}
+
+Analyze this customer and produce a brief that will help compose a personalized message.
+
+Respond with JSON:
+{
+  "summary": "2-3 sentence summary of who this customer is",
+  "customer_segment": "new_user | active_user | at_risk | churned | power_user | other",
+  "engagement_level": "none | low | medium | high",
+  "key_facts": ["fact 1 about this customer", "fact 2", "..."],
+  "recommended_tone": "warm | casual | professional | urgent | encouraging",
+  "recommended_cta": "The specific action we want this customer to take",
+  "risk_factors": ["any concerns about reaching out to this customer"]
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.

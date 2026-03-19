@@ -1,0 +1,80 @@
+You are a database analyst. You've been given the complete schema of a business's
+PostgreSQL database. Your job is to classify each table's business role and identify
+the key business concepts.
+
+{% if business_name %}This database belongs to: {{ business_name }}{% endif %}
+{% if business_description %}Business description: {{ business_description }}{% endif %}
+
+SCHEMA:
+{% for table in tables %}
+Table: {{ table.name }} ({{ table.row_count }} rows)
+Columns:
+{% for col in table.columns %}
+  - {{ col.name }} ({{ col.data_type }}{% if col.is_nullable == 'NO' %}, NOT NULL{% endif %}{% if col.column_default %}, default: {{ col.column_default }}{% endif %})
+    {% if col.sample_values %}Sample values: {{ col.sample_values[:5] }}{% endif %}
+    {% if col.null_rate is not none %}Null rate: {{ (col.null_rate * 100)|round(1) }}%{% endif %}
+{% endfor %}
+Foreign keys: {% for fk in table.foreign_keys %}{{ fk.column }} → {{ fk.references_table }}.{{ fk.references_column }}{% if not loop.last %}, {% endif %}{% endfor %}
+
+{% endfor %}
+
+Respond with JSON:
+{
+  "business_type": "string — ecommerce | saas | marketplace | driver_service | healthcare | fintech | other",
+  "business_description": "One sentence describing what this business does, inferred from the data",
+
+  "customer_table": "table name where customers/users live",
+  "customer_id_column": "primary key column",
+  "customer_name_column": "name or full_name column, or null",
+  "customer_email_column": "email column, or null",
+  "customer_phone_column": "phone number column, or null",
+  "customer_created_at_column": "signup/creation timestamp column",
+  "customer_status_column": "status or state column, or null",
+  "customer_timezone_column": "timezone column, or null",
+  "customer_type_column": "column that distinguishes customer types (e.g., role, type), or null",
+  "customer_type_value": "the value that means 'customer' (e.g., 'Client', 'customer', 'buyer'), or null",
+  "soft_delete_column": "deleted_at or similar, or null",
+  "exclude_filters": ["SQL conditions to exclude test/system accounts, e.g., 'system_account IS NOT TRUE'"],
+
+  "sms_consent_column": "column indicating SMS opt-in (timestamp or boolean), or null",
+  "sms_consent_check": "SQL expression that means 'this user consented to SMS', e.g., 'accepted_sms_at IS NOT NULL'",
+  "push_token_column": "push notification token column, or null",
+
+  "activation_table": "table where the key activation event lives (e.g., cards, payments, orders)",
+  "activation_event": "human-readable description of what activation means",
+  "activation_fk_column": "FK column pointing to customer",
+  "activation_check_sql": "SQL that returns TRUE if customer has activated — use $1 as customer ID placeholder",
+  "activation_soft_delete": "soft delete filter for activation table, or null",
+
+  "transaction_table": "table where transactions/orders/bookings live, or null",
+  "transaction_fk_column": "FK to customer, or null",
+  "transaction_amount_column": "monetary amount column (cents or dollars), or null",
+  "transaction_amount_is_cents": true,
+  "transaction_status_column": "status column, or null",
+  "transaction_completed_value": "value meaning completed, or null",
+  "transaction_date_column": "date/time column, or null",
+
+  "subscription_table": "recurring revenue table, or null",
+  "subscription_fk_column": "FK to customer, or null",
+  "subscription_status_column": "status column, or null",
+  "subscription_active_value": "value meaning active, or null",
+  "subscription_cancelled_value": "value meaning cancelled, or null",
+  "subscription_amount_column": "price/rate column, or null",
+  "subscription_frequency_column": "billing frequency column, or null",
+
+  "attribution_table": "UTM or attribution tracking table, or null",
+  "attribution_fk_column": "FK to customer, or null",
+  "attribution_source_column": "source column, or null",
+  "attribution_campaign_column": "campaign column, or null",
+
+  "additional_profile_tables": [
+    {
+      "table": "table_name",
+      "fk_column": "FK to customer",
+      "useful_columns": ["col1", "col2"],
+      "description": "why this table is useful for customer profiling"
+    }
+  ]
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.
