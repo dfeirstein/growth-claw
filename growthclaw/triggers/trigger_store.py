@@ -132,7 +132,11 @@ async def pause(conn: asyncpg.Connection, trigger_id: UUID) -> None:  # type: ig
 
 def _row_to_trigger(row: asyncpg.Record) -> TriggerRule:  # type: ignore[type-arg]
     """Convert a database row to a TriggerRule model."""
-    profile_queries = [ProfileQuery.model_validate(pq) for pq in (row["profile_queries"] or [])]
+    raw_pqs = row["profile_queries"] or []
+    # Handle double-serialized JSONB (string instead of list)
+    if isinstance(raw_pqs, str):
+        raw_pqs = json.loads(raw_pqs)
+    profile_queries = [ProfileQuery.model_validate(pq) for pq in raw_pqs]
     return TriggerRule(
         id=row["id"],
         name=row["name"],
