@@ -153,29 +153,25 @@ fi
 
 print_ok "Command: growthclaw"
 
-# ─── Step 6: Run init ────────────────────────────────────────
-
-print_step "Initializing GrowthClaw..."
-echo ""
-
-"$BIN_DIR/growthclaw" init
+# ─── Step 6: Done ─────────────────────────────────────────────
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║       Installation Complete!              ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
-echo "  Workspace: ~/.growthclaw/"
 echo "  Command:   growthclaw"
 echo ""
-echo "  Quick start:"
-echo "    growthclaw setup     # Configure DB, keys, channels"
-echo "    growthclaw migrate   # Create internal tables"
-echo "    growthclaw onboard   # Discover your database"
+echo "  Next step — run this in a new terminal:"
+echo ""
+echo -e "    ${GREEN}growthclaw init${NC}"
+echo ""
+echo "  This creates your workspace at ~/.growthclaw/ and"
+echo "  walks you through setup (DB, API keys, channels)."
 echo ""
 
 # Remind to reload shell if PATH was updated
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-    echo -e "  ${YELLOW}Restart your terminal or run: source ~/.zshrc${NC}"
+    echo -e "  ${YELLOW}First restart your terminal or run: source ~/.zshrc${NC}"
     echo ""
 fi
