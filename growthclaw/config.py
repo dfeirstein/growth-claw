@@ -1,13 +1,30 @@
-"""GrowthClaw configuration — loads and validates all environment variables."""
+"""GrowthClaw configuration — loads settings from workspace .env file."""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 
+def _find_env_file() -> str:
+    """Find .env file: workspace first, then cwd."""
+    # Check if we're in a workspace (has .growthclaw-workspace marker)
+    cwd = Path.cwd()
+    for parent in [cwd, *cwd.parents]:
+        if (parent / ".growthclaw-workspace").exists():
+            env = parent / ".env"
+            if env.exists():
+                return str(env)
+            break
+
+    # Fall back to cwd
+    return ".env"
+
+
 class Settings(BaseSettings):
-    """All GrowthClaw settings, loaded from environment variables and .env file."""
+    """All GrowthClaw settings, loaded from workspace .env file."""
 
     # Database URLs
     customer_database_url: str = Field(alias="CUSTOMER_DATABASE_URL")
@@ -15,7 +32,7 @@ class Settings(BaseSettings):
 
     # LLM providers (at least one required)
     nvidia_api_key: str | None = Field(default=None, alias="NVIDIA_API_KEY")
-    nvidia_nim_url: str | None = Field(default=None, alias="NVIDIA_NIM_URL")  # Local: http://localhost:8000/v1
+    nvidia_nim_url: str | None = Field(default=None, alias="NVIDIA_NIM_URL")
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
 
     # Twilio SMS
@@ -49,14 +66,14 @@ class Settings(BaseSettings):
 
     # Memory system
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
-    memory_db_path: str = Field(default="~/.growthclaw/memory", alias="GROWTHCLAW_MEMORY_PATH")
+    memory_db_path: str = Field(default="data/memory", alias="GROWTHCLAW_MEMORY_PATH")
 
     # System settings
     dry_run: bool = Field(default=True, alias="GROWTHCLAW_DRY_RUN")
     sample_rows: int = Field(default=500, alias="GROWTHCLAW_SAMPLE_ROWS")
 
     model_config = {
-        "env_file": ".env",
+        "env_file": _find_env_file(),
         "env_file_encoding": "utf-8",
         "populate_by_name": True,
         "extra": "ignore",

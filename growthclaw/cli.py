@@ -28,6 +28,41 @@ def main(verbose: bool) -> None:
 
 
 @main.command()
+@click.argument("path", default=".")
+def init(path: str) -> None:
+    """Create a new GrowthClaw workspace.
+
+    PATH is the directory to create (default: current directory).
+    Example: growthclaw init ~/my-company
+    """
+    from growthclaw.workspace import init_workspace
+
+    business = click.prompt("Business name (optional)", default="", show_default=False)
+
+    workspace = init_workspace(path, business_name=business)
+    print()
+    print(f"  Workspace created at: {workspace}")
+    print()
+
+    run_setup = click.confirm("  Run setup wizard now?", default=True)
+    if run_setup:
+        import os
+
+        os.chdir(workspace)
+        from growthclaw.setup_wizard import run_wizard
+
+        run_wizard(workspace)
+    else:
+        print()
+        print("  Next steps:")
+        print(f"  1. cd {workspace}")
+        print("  2. growthclaw setup           # Interactive setup wizard")
+        print("  3. growthclaw migrate")
+        print("  4. growthclaw onboard")
+        print("  5. growthclaw daemon start    # Start the agent")
+
+
+@main.command()
 def onboard() -> None:
     """Run full discovery + analysis + trigger proposal."""
     from growthclaw.main import run_onboard
@@ -281,6 +316,100 @@ def dashboard() -> None:
         ["streamlit", "run", "growthclaw/dashboard/app.py", "--server.port", "8501"],
     )
     click.echo("Dashboard running at http://localhost:8501")
+
+
+# ─── Daemon Commands ───────────────────────────────────────────────────────
+
+
+@main.group()
+def daemon() -> None:
+    """Manage the GrowthClaw agent daemon."""
+    pass
+
+
+@daemon.command(name="start")
+@click.option("--claude", "use_claude", is_flag=True, help="Run Claude Code CLI in tmux (with channels, MCP, skills)")
+@click.option("--no-resume", is_flag=True, help="Start fresh Claude session (don't resume)")
+def daemon_start(use_claude: bool, no_resume: bool) -> None:
+    """Start the GrowthClaw daemon."""
+    from growthclaw.daemon import start
+
+    mode = "claude" if use_claude else "standalone"
+    start(mode=mode, resume=not no_resume)
+
+
+@daemon.command(name="stop")
+def daemon_stop() -> None:
+    """Stop the GrowthClaw daemon."""
+    from growthclaw.daemon import stop
+
+    stop()
+
+
+@daemon.command(name="status")
+def daemon_status() -> None:
+    """Show daemon status."""
+    from growthclaw.daemon import status
+
+    status()
+
+
+# ─── Channel Commands ──────────────────────────────────────────────────────
+
+
+@main.group()
+def channels() -> None:
+    """Configure operator communication channels."""
+    pass
+
+
+@channels.command(name="telegram")
+def channels_telegram() -> None:
+    """Set up Telegram as an operator channel."""
+    from growthclaw.channels import setup_telegram
+
+    setup_telegram()
+
+
+@channels.command(name="discord")
+def channels_discord() -> None:
+    """Set up Discord as an operator channel."""
+    from growthclaw.channels import setup_discord
+
+    setup_discord()
+
+
+@channels.command(name="slack")
+def channels_slack() -> None:
+    """Set up Slack as an operator channel."""
+    from growthclaw.setup_wizard import _setup_slack
+
+    _setup_slack()
+
+
+@channels.command(name="mcp")
+def channels_mcp() -> None:
+    """Register GrowthClaw MCP server for Claude Code."""
+    from growthclaw.channels import setup_mcp
+
+    setup_mcp()
+
+
+# ─── Setup Wizard ──────────────────────────────────────────────────────────
+
+
+@main.command()
+def setup() -> None:
+    """Interactive setup wizard: database, API keys, channels, permissions."""
+
+    from growthclaw.setup_wizard import run_wizard
+    from growthclaw.workspace import find_workspace
+
+    ws = find_workspace()
+    if ws is None:
+        print("Not in a GrowthClaw workspace. Run: growthclaw init <path>")
+        return
+    run_wizard(ws)
 
 
 if __name__ == "__main__":
