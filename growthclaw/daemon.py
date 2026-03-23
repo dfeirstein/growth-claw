@@ -13,9 +13,10 @@ from pathlib import Path
 
 logger = logging.getLogger("growthclaw.daemon")
 
-PID_FILE = Path.home() / ".growthclaw" / "daemon.pid"
+GROWTHCLAW_HOME = Path.home() / ".growthclaw"
+PID_FILE = GROWTHCLAW_HOME / "daemon.pid"
 TMUX_SESSION = "growthclaw"
-LOG_DIR = Path.home() / ".growthclaw" / "logs"
+LOG_DIR = GROWTHCLAW_HOME / "data" / "logs"
 
 
 def _ensure_dirs() -> None:
@@ -112,15 +113,10 @@ def _start_claude_mode(resume: bool = True) -> None:
 
     print("Starting GrowthClaw agent (Claude Code in tmux)...")
 
-    # Build the claude command
-    cwd = os.getcwd()
-    venv_activate = ""
-    venv_path = Path(cwd) / ".venv" / "bin" / "activate"
-    if venv_path.exists():
-        venv_activate = f"source {venv_path} && "
-
+    # Build the claude command — runs in ~/.growthclaw/ workspace
+    workspace = str(GROWTHCLAW_HOME)
     resume_flag = "--resume" if resume else ""
-    claude_cmd = f"cd {cwd} && {venv_activate}claude {resume_flag}"
+    claude_cmd = f"cd {workspace} && claude {resume_flag}"
 
     # Start tmux session
     subprocess.run(

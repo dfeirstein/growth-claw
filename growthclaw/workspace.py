@@ -1,4 +1,4 @@
-"""GrowthClaw workspace management — creates and manages customer workspaces separate from source code."""
+"""GrowthClaw workspace management — single workspace at ~/.growthclaw/."""
 
 from __future__ import annotations
 
@@ -7,7 +7,9 @@ import shutil
 import sys
 from pathlib import Path
 
+GROWTHCLAW_HOME = Path.home() / ".growthclaw"
 WORKSPACE_MARKER = ".growthclaw-workspace"
+
 ENV_TEMPLATE = """# ═══════════════════════════════════════════════════════════════
 # GrowthClaw Configuration
 # ═══════════════════════════════════════════════════════════════
@@ -97,25 +99,21 @@ __pycache__/
 """
 
 
-def find_workspace(start: Path | None = None) -> Path | None:
-    """Walk up from start (or cwd) looking for a .growthclaw-workspace marker."""
-    current = start or Path.cwd()
-    for parent in [current, *current.parents]:
-        if (parent / WORKSPACE_MARKER).exists():
-            return parent
-    return None
+def get_workspace() -> Path:
+    """Return the workspace path (~/.growthclaw/). Always the same location."""
+    return GROWTHCLAW_HOME
 
 
-def is_workspace(path: Path) -> bool:
-    """Check if a path is a GrowthClaw workspace."""
-    return (path / WORKSPACE_MARKER).exists()
+def is_initialized() -> bool:
+    """Check if the workspace has been initialized."""
+    return (GROWTHCLAW_HOME / WORKSPACE_MARKER).exists()
 
 
-def init_workspace(path: str | Path, business_name: str = "") -> Path:
-    """Create a new GrowthClaw workspace directory.
+def init_workspace(business_name: str = "") -> Path:
+    """Initialize the GrowthClaw workspace at ~/.growthclaw/.
 
     Creates:
-        <path>/
+        ~/.growthclaw/
         ├── .growthclaw-workspace   # Marker file
         ├── .env                    # Configuration (customer fills in)
         ├── .gitignore              # Excludes secrets and data
@@ -127,14 +125,11 @@ def init_workspace(path: str | Path, business_name: str = "") -> Path:
             ├── memory/             # LanceDB storage
             └── logs/               # Tool call and notification logs
     """
-    workspace = Path(path).expanduser().resolve()
+    workspace = GROWTHCLAW_HOME
 
-    if workspace.exists() and any(workspace.iterdir()):
-        if is_workspace(workspace):
-            print(f"  Workspace already exists at {workspace}")
-            return workspace
-        # Non-empty non-workspace directory
-        raise FileExistsError(f"Directory {workspace} exists and is not a GrowthClaw workspace")
+    if is_initialized():
+        print(f"  Workspace already exists at {workspace}")
+        return workspace
 
     workspace.mkdir(parents=True, exist_ok=True)
 
@@ -174,15 +169,3 @@ def init_workspace(path: str | Path, business_name: str = "") -> Path:
     (workspace / "data" / "logs").mkdir(parents=True, exist_ok=True)
 
     return workspace
-
-
-def get_workspace_or_exit() -> Path:
-    """Find the workspace or print an error and exit."""
-    ws = find_workspace()
-    if ws is None:
-        print("ERROR: Not in a GrowthClaw workspace.")
-        print()
-        print("  Create one with: growthclaw init <path>")
-        print("  Example: growthclaw init ~/my-company")
-        sys.exit(1)
-    return ws

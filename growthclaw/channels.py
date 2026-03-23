@@ -9,11 +9,10 @@ from pathlib import Path
 
 
 def _get_workspace() -> Path:
-    """Get the current workspace directory."""
-    from growthclaw.workspace import find_workspace
+    """Get the workspace directory (~/.growthclaw/)."""
+    from growthclaw.workspace import get_workspace
 
-    ws = find_workspace()
-    return ws if ws else Path.cwd()
+    return get_workspace()
 
 
 def _get_mcp_config() -> Path:

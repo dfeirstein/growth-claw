@@ -9,17 +9,10 @@ from pydantic_settings import BaseSettings
 
 
 def _find_env_file() -> str:
-    """Find .env file: workspace first, then cwd."""
-    # Check if we're in a workspace (has .growthclaw-workspace marker)
-    cwd = Path.cwd()
-    for parent in [cwd, *cwd.parents]:
-        if (parent / ".growthclaw-workspace").exists():
-            env = parent / ".env"
-            if env.exists():
-                return str(env)
-            break
-
-    # Fall back to cwd
+    """Find .env file: ~/.growthclaw/.env first, then cwd/.env."""
+    home_env = Path.home() / ".growthclaw" / ".env"
+    if home_env.exists():
+        return str(home_env)
     return ".env"
 
 

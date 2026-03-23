@@ -28,38 +28,43 @@ def main(verbose: bool) -> None:
 
 
 @main.command()
-@click.argument("path", default=".")
-def init(path: str) -> None:
-    """Create a new GrowthClaw workspace.
+def init() -> None:
+    """Initialize GrowthClaw workspace at ~/.growthclaw/."""
+    from growthclaw.workspace import get_workspace, init_workspace, is_initialized
 
-    PATH is the directory to create (default: current directory).
-    Example: growthclaw init ~/my-company
-    """
-    from growthclaw.workspace import init_workspace
+    if is_initialized():
+        print(f"  Workspace already exists at {get_workspace()}")
+        rerun = click.confirm("  Re-run setup wizard?", default=False)
+        if not rerun:
+            return
+        from growthclaw.setup_wizard import run_wizard
 
-    business = click.prompt("Business name (optional)", default="", show_default=False)
+        run_wizard(get_workspace())
+        return
 
-    workspace = init_workspace(path, business_name=business)
+    print()
+    print("  Creating GrowthClaw workspace at ~/.growthclaw/")
+    print()
+
+    business = click.prompt("  Business name (optional)", default="", show_default=False)
+    workspace = init_workspace(business_name=business)
+
     print()
     print(f"  Workspace created at: {workspace}")
     print()
 
     run_setup = click.confirm("  Run setup wizard now?", default=True)
     if run_setup:
-        import os
-
-        os.chdir(workspace)
         from growthclaw.setup_wizard import run_wizard
 
         run_wizard(workspace)
     else:
         print()
         print("  Next steps:")
-        print(f"  1. cd {workspace}")
-        print("  2. growthclaw setup           # Interactive setup wizard")
-        print("  3. growthclaw migrate")
-        print("  4. growthclaw onboard")
-        print("  5. growthclaw daemon start    # Start the agent")
+        print("    growthclaw setup            # Interactive setup wizard")
+        print("    growthclaw migrate")
+        print("    growthclaw onboard")
+        print("    growthclaw daemon start     # Start the agent")
 
 
 @main.command()
@@ -401,15 +406,13 @@ def channels_mcp() -> None:
 @main.command()
 def setup() -> None:
     """Interactive setup wizard: database, API keys, channels, permissions."""
-
     from growthclaw.setup_wizard import run_wizard
-    from growthclaw.workspace import find_workspace
+    from growthclaw.workspace import get_workspace, is_initialized
 
-    ws = find_workspace()
-    if ws is None:
-        print("Not in a GrowthClaw workspace. Run: growthclaw init <path>")
+    if not is_initialized():
+        print("GrowthClaw not initialized. Run: growthclaw init")
         return
-    run_wizard(ws)
+    run_wizard(get_workspace())
 
 
 if __name__ == "__main__":
