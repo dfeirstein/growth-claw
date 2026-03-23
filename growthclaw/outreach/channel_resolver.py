@@ -64,3 +64,17 @@ async def resolve(
         return await resolve(conn, user_id, concepts, preferred_channel="email")
 
     return ContactInfo(channel=preferred_channel, value=None, has_consent=False)
+
+
+async def is_suppressed(
+    conn: asyncpg.Connection,  # type: ignore[type-arg]
+    user_id: str,
+    channel: str,
+) -> bool:
+    """Check if user has opted out of this channel (unsubscribed, bounced, complained)."""
+    row = await conn.fetchrow(
+        "SELECT 1 FROM growthclaw.suppressions WHERE user_id = $1 AND channel = $2",
+        user_id,
+        channel,
+    )
+    return row is not None

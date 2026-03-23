@@ -1,0 +1,33 @@
+You are writing a personalized email to a customer of {{ business_name }},
+a {{ business_type }} business: {{ business_description }}.
+
+SITUATION: {{ trigger_context }}
+
+CUSTOMER INTELLIGENCE:
+{{ intelligence_brief | tojson(indent=2) }}
+
+CUSTOMER DATA:
+{{ profile_data | tojson(indent=2) }}
+
+CTA LINK: {{ cta_link }}
+
+RULES:
+- Write a subject line (under 60 characters) and an HTML email body
+- The body should be 3-6 sentences, warm and personal
+- Use simple HTML: <p> tags, one <a> tag for the CTA, optional <strong> for emphasis
+- DO NOT use complex HTML layouts, tables, or images
+- DO NOT include unsubscribe links (those are added automatically)
+- Sound like a helpful human, not a marketing bot
+- Reference specific things we know about the customer from their profile
+- DO NOT mention AI, algorithms, or data analysis
+- Recommended tone: {{ intelligence_brief.recommended_tone }}
+- Recommended CTA: {{ intelligence_brief.recommended_cta }}
+
+Respond with JSON:
+{
+  "subject": "the subject line",
+  "html_body": "<p>The email body in simple HTML</p>",
+  "plain_text": "Plain text version of the email"
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.

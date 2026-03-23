@@ -67,6 +67,7 @@ def _make_mock_llm(responses: list[str]) -> LLMClient:
 # SMS length tests
 # ---------------------------------------------------------------------------
 
+
 async def test_sms_under_160_chars():
     """SMS message under 160 chars is returned as-is."""
     short_msg = "Hi Alice! Complete your first order and get 10% off: https://shop.co/go"
@@ -194,6 +195,7 @@ async def test_sms_strips_whitespace():
 # Email channel tests (no 160-char limit)
 # ---------------------------------------------------------------------------
 
+
 async def test_email_allows_long_messages():
     """Email messages are not subject to the 160-char SMS limit."""
     long_email = "Dear Alice,\n\n" + "Thank you for signing up! " * 20 + "\n\nBest,\nTestShop"
@@ -233,6 +235,7 @@ async def test_email_still_strips_quotes():
 # ---------------------------------------------------------------------------
 # LLM interaction tests
 # ---------------------------------------------------------------------------
+
 
 async def test_compose_uses_creative_temperature():
     """Message composition uses a higher temperature for creativity."""
@@ -318,6 +321,7 @@ async def test_retry_prompt_includes_char_count():
 # ---------------------------------------------------------------------------
 # Edge case: different business types
 # ---------------------------------------------------------------------------
+
 
 async def test_compose_for_driver_service():
     """Message can be composed for a driver service business."""

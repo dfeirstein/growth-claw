@@ -60,3 +60,34 @@ async def compose(
 
     logger.info("Composed %s message (%d chars) for trigger %s", trigger.channel, len(message), trigger.name)
     return message
+
+
+async def compose_email(
+    trigger: TriggerRule,
+    profile_data: dict,
+    intelligence_brief: IntelligenceBrief,
+    concepts: BusinessConcepts,
+    llm_client: LLMClient,
+    cta_link: str = "",
+    business_name: str = "",
+) -> dict:
+    """Compose a personalized email. Returns {"subject": str, "html_body": str, "plain_text": str}."""
+    prompt = render_template(
+        "compose_email.j2",
+        trigger_context=trigger.message_context,
+        profile_data=profile_data,
+        intelligence_brief=intelligence_brief.model_dump(mode="json"),
+        business_type=concepts.business_type or "business",
+        business_description=concepts.business_description or "",
+        cta_link=cta_link,
+        business_name=business_name or concepts.business_description,
+    )
+
+    result = await llm_client.call_json(prompt, temperature=0.7)
+
+    subject = result.get("subject", "")
+    html_body = result.get("html_body", "")
+    plain_text = result.get("plain_text", "")
+
+    logger.info("Composed email for trigger %s: subject='%s' (%d chars body)", trigger.name, subject, len(html_body))
+    return {"subject": subject, "html_body": html_body, "plain_text": plain_text}

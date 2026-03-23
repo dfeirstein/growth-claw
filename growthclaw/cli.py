@@ -272,5 +272,16 @@ def migrate() -> None:
     run_migrate()
 
 
+@main.command()
+def dashboard() -> None:
+    """Open the GrowthClaw dashboard."""
+    import subprocess
+
+    subprocess.Popen(  # noqa: S603, S607
+        ["streamlit", "run", "growthclaw/dashboard/app.py", "--server.port", "8501"],
+    )
+    click.echo("Dashboard running at http://localhost:8501")
+
+
 if __name__ == "__main__":
     main()

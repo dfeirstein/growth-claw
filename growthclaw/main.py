@@ -25,7 +25,9 @@ from growthclaw.models.journey import Journey
 from growthclaw.models.schema_map import BusinessConcepts, Funnel
 from growthclaw.models.trigger import TriggerEvent, TriggerRule
 from growthclaw.outreach import channel_resolver, journey_store, message_composer, sms_sender
+from growthclaw.outreach.email_sender import EmailSender
 from growthclaw.triggers import cdc_listener, trigger_evaluator, trigger_installer, trigger_proposer, trigger_store
+from growthclaw.triggers.frequency_manager import check_global_frequency, record_send
 
 logger = logging.getLogger("growthclaw.main")
 
@@ -37,6 +39,7 @@ class GrowthClaw:
         self.settings = settings or get_settings()
         self.llm_client: LLMClient = create_llm_client(self.settings.nvidia_api_key, self.settings.anthropic_api_key)
         self.sms = sms_sender.SMSSender(self.settings)
+        self.email = EmailSender(self.settings)
         self.scheduler = AsyncIOScheduler()
         self.listener: cdc_listener.CDCListener | None = None
         self.customer_pool: asyncpg.Pool | None = None  # type: ignore[type-arg]
@@ -332,41 +335,88 @@ class GrowthClaw:
                 logger.info("User %s not reachable via %s", event.user_id, trigger.channel)
                 return
 
-            # Compose message
-            message = await message_composer.compose(
-                trigger,
-                profile_data,
-                brief,
-                self.concepts,
-                self.llm_client,
-                cta_link=self.settings.card_link_url,
-                business_name=self.settings.business_name,
-            )
-
-            # Create journey record
-            journey = Journey(
-                user_id=event.user_id,
-                trigger_id=trigger.id,
-                event_id=event_id,
-                channel=trigger.channel,
-                contact_info=contact.value,
-                message_body=message,
-                experiment_id=experiment.id if hasattr(experiment, "id") else None,
-                experiment_arm=arm.name if hasattr(arm, "name") else None,
-            )
+            # Check suppression (unsubscribed, bounced, complained)
             async with self.internal_pool.acquire() as iconn:
-                await journey_store.create(iconn, journey)
+                if await channel_resolver.is_suppressed(iconn, event.user_id, trigger.channel):
+                    logger.info("User %s is suppressed for %s", event.user_id, trigger.channel)
+                    return
 
-            # Send message
+            # Check global frequency caps
+            max_day = self.settings.max_sms_per_day if trigger.channel == "sms" else self.settings.max_email_per_day
+            max_week = self.settings.max_sms_per_week if trigger.channel == "sms" else self.settings.max_email_per_week
+            async with self.internal_pool.acquire() as iconn:
+                if not await check_global_frequency(iconn, event.user_id, trigger.channel, max_day, max_week):
+                    logger.info("User %s hit frequency cap for %s", event.user_id, trigger.channel)
+                    return
+
+            # Compose message (SMS or email)
             provider_id = None
-            if trigger.channel == "sms" and contact.value:
-                provider_id = await self.sms.send(contact.value, message)
+            if trigger.channel == "email":
+                email_result = await message_composer.compose_email(
+                    trigger,
+                    profile_data,
+                    brief,
+                    self.concepts,
+                    self.llm_client,
+                    cta_link=self.settings.card_link_url,
+                    business_name=self.settings.business_name,
+                )
+                message_body = email_result["html_body"]
 
-            # Update journey status
+                journey = Journey(
+                    user_id=event.user_id,
+                    trigger_id=trigger.id,
+                    event_id=event_id,
+                    channel="email",
+                    contact_info=contact.value,
+                    message_body=message_body,
+                    experiment_id=experiment.id if hasattr(experiment, "id") else None,
+                    experiment_arm=arm.name if hasattr(arm, "name") else None,
+                )
+                async with self.internal_pool.acquire() as iconn:
+                    await journey_store.create(iconn, journey)
+
+                if contact.value:
+                    provider_id = await self.email.send(
+                        to_email=contact.value,
+                        subject=email_result["subject"],
+                        html_body=email_result["html_body"],
+                        plain_text=email_result.get("plain_text"),
+                    )
+            else:
+                message = await message_composer.compose(
+                    trigger,
+                    profile_data,
+                    brief,
+                    self.concepts,
+                    self.llm_client,
+                    cta_link=self.settings.card_link_url,
+                    business_name=self.settings.business_name,
+                )
+                message_body = message
+
+                journey = Journey(
+                    user_id=event.user_id,
+                    trigger_id=trigger.id,
+                    event_id=event_id,
+                    channel="sms",
+                    contact_info=contact.value,
+                    message_body=message_body,
+                    experiment_id=experiment.id if hasattr(experiment, "id") else None,
+                    experiment_arm=arm.name if hasattr(arm, "name") else None,
+                )
+                async with self.internal_pool.acquire() as iconn:
+                    await journey_store.create(iconn, journey)
+
+                if contact.value:
+                    provider_id = await self.sms.send(contact.value, message)
+
+            # Update journey status + record fire + track frequency
             status = "sent" if provider_id or self.settings.dry_run else "failed"
             async with self.internal_pool.acquire() as iconn:
                 await journey_store.update_sent(iconn, journey.id, provider_id, status)
                 await trigger_evaluator.record_fire(iconn, event.user_id, trigger)
+                await record_send(iconn, event.user_id, trigger.channel)
 
                 # Track experiment send
                 if hasattr(experiment, "id") and hasattr(arm, "name"):

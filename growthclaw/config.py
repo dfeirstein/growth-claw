@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     twilio_auth_token: str | None = Field(default=None, alias="TWILIO_AUTH_TOKEN")
     twilio_from_number: str | None = Field(default=None, alias="TWILIO_FROM_NUMBER")
 
+    # Email provider ("resend" or "sendgrid")
+    email_provider: str = Field(default="resend", alias="GROWTHCLAW_EMAIL_PROVIDER")
+    resend_api_key: str | None = Field(default=None, alias="RESEND_API_KEY")
+    sendgrid_api_key: str | None = Field(default=None, alias="SENDGRID_API_KEY")
+    from_email: str | None = Field(default=None, alias="GROWTHCLAW_FROM_EMAIL")
+    from_name: str | None = Field(default=None, alias="GROWTHCLAW_FROM_NAME")
+
     # Business context (optional, helps LLM)
     business_name: str = Field(default="", alias="GROWTHCLAW_BUSINESS_NAME")
     business_description: str = Field(default="", alias="GROWTHCLAW_BUSINESS_DESCRIPTION")
@@ -32,6 +39,12 @@ class Settings(BaseSettings):
     cooldown_hours: int = Field(default=24, alias="GROWTHCLAW_COOLDOWN_HOURS")
     quiet_hours_start: int = Field(default=21, alias="GROWTHCLAW_QUIET_HOURS_START")
     quiet_hours_end: int = Field(default=8, alias="GROWTHCLAW_QUIET_HOURS_END")
+
+    # Global frequency caps (cross-trigger)
+    max_sms_per_day: int = Field(default=2, alias="GROWTHCLAW_MAX_SMS_PER_DAY")
+    max_sms_per_week: int = Field(default=5, alias="GROWTHCLAW_MAX_SMS_PER_WEEK")
+    max_email_per_day: int = Field(default=2, alias="GROWTHCLAW_MAX_EMAIL_PER_DAY")
+    max_email_per_week: int = Field(default=7, alias="GROWTHCLAW_MAX_EMAIL_PER_WEEK")
 
     # System settings
     dry_run: bool = Field(default=True, alias="GROWTHCLAW_DRY_RUN")

@@ -39,6 +39,7 @@ def _make_record(mapping: dict) -> MagicMock:
 # Basic execution tests
 # ---------------------------------------------------------------------------
 
+
 async def test_executes_all_profile_queries():
     """All profile queries are executed and results collected."""
     queries = [
@@ -104,6 +105,7 @@ async def test_single_query():
 # Error handling tests
 # ---------------------------------------------------------------------------
 
+
 async def test_handles_failed_query_gracefully():
     """A failing query results in None for that key, other queries still succeed."""
     queries = [
@@ -166,6 +168,7 @@ async def test_query_returns_empty_result():
 # User ID conversion tests
 # ---------------------------------------------------------------------------
 
+
 async def test_numeric_user_id_conversion():
     """Numeric string user_ids are converted to int for parameterized queries."""
     queries = [ProfileQuery(name="test", sql="SELECT 1 WHERE id = $1", description="test")]
@@ -209,12 +212,13 @@ async def test_zero_user_id_is_numeric():
 # Realistic profile scenarios
 # ---------------------------------------------------------------------------
 
+
 async def test_ecommerce_profile():
     """Realistic ecommerce profile with customer info, orders, and items."""
     queries = [
         ProfileQuery(
             name="customer",
-            sql='SELECT first_name, email, created_at FROM customers WHERE id = $1',
+            sql="SELECT first_name, email, created_at FROM customers WHERE id = $1",
             description="Basic customer info",
         ),
         ProfileQuery(
@@ -227,7 +231,7 @@ async def test_ecommerce_profile():
         ),
         ProfileQuery(
             name="order_count",
-            sql='SELECT COUNT(*) as count FROM orders WHERE customer_id = $1',
+            sql="SELECT COUNT(*) as count FROM orders WHERE customer_id = $1",
             description="Total order count",
         ),
     ]
@@ -264,7 +268,7 @@ async def test_driver_service_profile():
     queries = [
         ProfileQuery(
             name="user_info",
-            sql='SELECT first_name, phone, created_at FROM users WHERE id = $1',
+            sql="SELECT first_name, phone, created_at FROM users WHERE id = $1",
             description="User info",
         ),
         ProfileQuery(
