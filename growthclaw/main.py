@@ -89,6 +89,17 @@ class GrowthClaw:
         await self._ensure_pools()
         assert self.customer_pool and self.internal_pool
 
+        # Auto-run migrations if schema doesn't exist
+        try:
+            async with self.internal_pool.acquire() as conn:
+                await conn.fetchval("SELECT 1 FROM growthclaw.schema_map LIMIT 0")
+        except Exception:
+            print("Running migrations (first time setup)...")
+            from growthclaw.migrate import run_migrations
+
+            await run_migrations(self.settings.growthclaw_database_url)
+            print()
+
         print("\U0001f43e GrowthClaw — Connecting to your database...\n")
 
         # Step 1: Scan schema
