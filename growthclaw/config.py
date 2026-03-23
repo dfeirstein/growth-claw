@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # Business context (optional, helps LLM)
     business_name: str = Field(default="", alias="GROWTHCLAW_BUSINESS_NAME")
     business_description: str = Field(default="", alias="GROWTHCLAW_BUSINESS_DESCRIPTION")
-    card_link_url: str = Field(default="https://app.example.com", alias="GROWTHCLAW_CARD_LINK_URL")
+    cta_url: str = Field(default="https://app.example.com", alias="GROWTHCLAW_CTA_URL")
 
     # Trigger settings
     max_fires_per_trigger: int = Field(default=3, alias="GROWTHCLAW_MAX_FIRES_PER_TRIGGER")

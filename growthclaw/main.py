@@ -150,6 +150,9 @@ class GrowthClaw:
             )
             await trigger_store.save_all(conn, triggers)
 
+        # Generate BUSINESS.md in workspace
+        self._generate_business_md(raw_schema, triggers)
+
         # Summary
         print("\n\u2705 GrowthClaw discovery complete!\n")
         print(f"  Business: {self.concepts.business_type} — {self.concepts.business_description}")
@@ -162,6 +165,50 @@ class GrowthClaw:
         print("  growthclaw triggers approve    # Review and approve proposed triggers")
         print("  growthclaw start               # Install CDC triggers and start listening")
         print("  growthclaw status              # Check system health")
+
+    def _generate_business_md(self, raw_schema: object, triggers: list) -> None:
+        """Generate BUSINESS.md in the workspace from discovery results."""
+        from growthclaw.workspace import generate_business_md, get_workspace
+
+        if not self.concepts or not self.funnel:
+            return
+
+        workspace = get_workspace()
+        customer_count = self.funnel.stages[0].count if self.funnel.stages else 0
+        activated_count = self.funnel.stages[1].count if len(self.funnel.stages) > 1 else 0
+        activation_rate = (activated_count / customer_count * 100) if customer_count > 0 else 0
+
+        content = generate_business_md(
+            business_name=self.settings.business_name or self.concepts.business_description,
+            business_type=self.concepts.business_type,
+            business_description=self.concepts.business_description,
+            table_count=len(raw_schema.tables) if hasattr(raw_schema, "tables") else 0,
+            customer_table=self.concepts.customer_table,
+            customer_count=customer_count,
+            customer_id_column=self.concepts.customer_id_column,
+            funnel_stages=[s.model_dump() for s in self.funnel.stages],
+            biggest_dropoff=self.funnel.biggest_dropoff.model_dump() if self.funnel.biggest_dropoff else None,
+            activation_event=self.concepts.activation_event or "unknown",
+            activation_table=self.concepts.activation_table or "unknown",
+            activation_rate=activation_rate,
+            optimal_minutes=self.funnel.activation_window.optimal_minutes if self.funnel.activation_window else 30,
+            reachability=self.funnel.reachability.model_dump() if self.funnel.reachability else None,
+            key_tables=[t.name for t in raw_schema.tables[:20]] if hasattr(raw_schema, "tables") else [],
+            triggers=[
+                {
+                    "name": t.name,
+                    "channel": t.channel,
+                    "description": t.description,
+                    "delay_minutes": t.delay_minutes,
+                    "expected_audience_per_week": t.expected_audience_per_week,
+                }
+                for t in triggers
+            ],
+        )
+
+        business_md = workspace / "BUSINESS.md"
+        business_md.write_text(content)
+        print(f"  Business profile written to: {business_md}")
 
     # -------------------------------------------------------------------------
     # START / STOP
@@ -369,7 +416,7 @@ class GrowthClaw:
                     brief,
                     self.concepts,
                     self.llm_client,
-                    cta_link=self.settings.card_link_url,
+                    cta_link=self.settings.cta_url,
                     business_name=self.settings.business_name,
                 )
                 message_body = email_result["html_body"]
@@ -401,7 +448,7 @@ class GrowthClaw:
                     brief,
                     self.concepts,
                     self.llm_client,
-                    cta_link=self.settings.card_link_url,
+                    cta_link=self.settings.cta_url,
                     business_name=self.settings.business_name,
                 )
                 message_body = message
