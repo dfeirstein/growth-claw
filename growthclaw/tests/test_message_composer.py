@@ -256,7 +256,7 @@ async def test_compose_uses_creative_temperature():
 
 async def test_compose_passes_business_name():
     """Business name is used in the prompt template context."""
-    short_msg = "Welcome to Jeevz! Book your first ride: https://app.co"
+    short_msg = "Welcome to DriverCo! Book your first ride: https://app.co"
     provider = AsyncMock()
     llm = LLMClient(provider=provider, provider_name="test")
     llm.call = AsyncMock(return_value=short_msg)
@@ -269,10 +269,10 @@ async def test_compose_passes_business_name():
             concepts=_make_concepts("driver_service"),
             llm_client=llm,
             cta_link="https://app.co",
-            business_name="Jeevz",
+            business_name="DriverCo",
         )
         call_kwargs = mock_render.call_args.kwargs
-        assert call_kwargs["business_name"] == "Jeevz"
+        assert call_kwargs["business_name"] == "DriverCo"
         assert call_kwargs["cta_link"] == "https://app.co"
 
 
@@ -325,7 +325,7 @@ async def test_retry_prompt_includes_char_count():
 
 async def test_compose_for_driver_service():
     """Message can be composed for a driver service business."""
-    msg = "Hi Michael! Book your first ride with Jeevz: https://app.co/go"
+    msg = "Hi Michael! Book your first ride with DriverCo: https://app.co/go"
     llm = _make_mock_llm([msg])
 
     result = await compose(
@@ -344,7 +344,7 @@ async def test_compose_for_driver_service():
         concepts=_make_concepts("driver_service"),
         llm_client=llm,
         cta_link="https://app.co/go",
-        business_name="Jeevz",
+        business_name="DriverCo",
     )
 
     assert len(result) <= SMS_MAX_LENGTH

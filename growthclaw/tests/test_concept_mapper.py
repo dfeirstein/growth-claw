@@ -318,7 +318,7 @@ async def test_driver_service_concept_mapping():
     schema = _load_raw_schema("driver_service_schema.json")
     llm = _make_mock_llm(DRIVER_SERVICE_LLM_RESPONSE)
 
-    result = await map_concepts(schema, {}, llm, business_name="Jeevz")
+    result = await map_concepts(schema, {}, llm, business_name="TestBiz")
     assert result.business_type == "driver_service"
     assert result.customer_table == "users"
     assert result.customer_type_value == "member"
