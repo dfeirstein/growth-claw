@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # LLM providers (at least one required)
     nvidia_api_key: str | None = Field(default=None, alias="NVIDIA_API_KEY")
+    nvidia_nim_url: str | None = Field(default=None, alias="NVIDIA_NIM_URL")  # Local: http://localhost:8000/v1
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
 
     # Twilio SMS

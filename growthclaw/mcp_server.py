@@ -110,6 +110,11 @@ TOOLS = [
             "required": ["text", "category"],
         },
     },
+    {
+        "name": "gc_llm_usage",
+        "description": "Show LLM usage stats: calls, tokens, and estimated costs by provider (last 30 days)",
+        "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
 ]
 
 
@@ -277,16 +282,14 @@ async def handle_gc_metrics(args: dict) -> str:
         )
         # Get send stats
         sends_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM growthclaw.journeys"
-            " WHERE sent_at >= CURRENT_DATE AND status = 'sent'"
+            "SELECT COUNT(*) FROM growthclaw.journeys WHERE sent_at >= CURRENT_DATE AND status = 'sent'"
         )
         sends_week = await conn.fetchval(
             "SELECT COUNT(*) FROM growthclaw.journeys"
             " WHERE sent_at >= CURRENT_DATE - INTERVAL '7 days' AND status = 'sent'"
         )
         convs_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM growthclaw.journeys"
-            " WHERE outcome = 'converted' AND outcome_at >= CURRENT_DATE"
+            "SELECT COUNT(*) FROM growthclaw.journeys WHERE outcome = 'converted' AND outcome_at >= CURRENT_DATE"
         )
         convs_week = await conn.fetchval(
             "SELECT COUNT(*) FROM growthclaw.journeys"
@@ -353,6 +356,17 @@ async def handle_gc_memory_store(args: dict) -> str:
         return json.dumps({"error": str(e)})
 
 
+async def handle_gc_llm_usage(args: dict) -> str:
+    conn = await _get_conn()
+    try:
+        from growthclaw.llm.usage_tracker import get_usage_summary
+
+        summary = await get_usage_summary(conn)
+        return json.dumps(summary, indent=2, default=_json_serial)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 # ─── Tool Dispatch ───────────────────────────────────────────────────────────
 
 TOOL_HANDLERS = {
@@ -365,6 +379,7 @@ TOOL_HANDLERS = {
     "gc_metrics": handle_gc_metrics,
     "gc_memory_recall": handle_gc_memory_recall,
     "gc_memory_store": handle_gc_memory_store,
+    "gc_llm_usage": handle_gc_llm_usage,
 }
 
 

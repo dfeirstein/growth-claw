@@ -37,7 +37,12 @@ class GrowthClaw:
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self.llm_client: LLMClient = create_llm_client(self.settings.nvidia_api_key, self.settings.anthropic_api_key)
+        self.llm_client: LLMClient = create_llm_client(
+            nvidia_api_key=self.settings.nvidia_api_key,
+            anthropic_api_key=self.settings.anthropic_api_key,
+            nvidia_nim_url=self.settings.nvidia_nim_url,
+            usage_conn_factory=self._get_usage_conn,
+        )
         self.sms = sms_sender.SMSSender(self.settings)
         self.email = EmailSender(self.settings)
         self.scheduler = AsyncIOScheduler()
@@ -46,6 +51,12 @@ class GrowthClaw:
         self.internal_pool: asyncpg.Pool | None = None  # type: ignore[type-arg]
         self.concepts: BusinessConcepts | None = None
         self.funnel: Funnel | None = None
+
+    async def _get_usage_conn(self) -> asyncpg.Connection:  # type: ignore[type-arg]
+        """Get a connection for LLM usage tracking."""
+        await self._ensure_pools()
+        assert self.internal_pool
+        return await self.internal_pool.acquire()
 
     async def _ensure_pools(self) -> None:
         """Create connection pools if they don't exist."""
