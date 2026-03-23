@@ -23,6 +23,8 @@ dependencies = [
     "streamlit>=1.45.0",
     "plotly>=6.1.0",
     "pandas>=2.2.3",
+    "lancedb>=0.15.0",
+    "openai>=1.60.0",
 ]
 
 [project.optional-dependencies]

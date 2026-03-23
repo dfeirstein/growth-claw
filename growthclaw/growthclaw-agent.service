@@ -1,0 +1,33 @@
+[Unit]
+Description=GrowthClaw Agent (Claude Code in tmux)
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=growthclaw
+Environment=HOME=/home/growthclaw
+WorkingDirectory=/opt/growthclaw
+
+# Start tmux session with Claude Code
+ExecStart=/usr/bin/tmux new-session -d -s growthclaw \
+    'cd /opt/growthclaw && source .venv/bin/activate && claude --resume'
+
+# Health check: verify tmux session exists
+ExecStartPost=/bin/sleep 3
+ExecStartPost=/usr/bin/tmux has-session -t growthclaw
+
+# Graceful stop
+ExecStop=/usr/bin/tmux send-keys -t growthclaw '/exit' Enter
+ExecStopPost=/bin/sleep 2
+ExecStopPost=/usr/bin/tmux kill-session -t growthclaw
+
+# Auto-restart on crash
+Restart=always
+RestartSec=10
+
+# Resource limits
+MemoryMax=4G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

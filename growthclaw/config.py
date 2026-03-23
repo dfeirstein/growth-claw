@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     max_email_per_day: int = Field(default=2, alias="GROWTHCLAW_MAX_EMAIL_PER_DAY")
     max_email_per_week: int = Field(default=7, alias="GROWTHCLAW_MAX_EMAIL_PER_WEEK")
 
+    # Memory system
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    memory_db_path: str = Field(default="~/.growthclaw/memory", alias="GROWTHCLAW_MEMORY_PATH")
+
     # System settings
     dry_run: bool = Field(default=True, alias="GROWTHCLAW_DRY_RUN")
     sample_rows: int = Field(default=500, alias="GROWTHCLAW_SAMPLE_ROWS")

@@ -49,7 +49,15 @@ def render_triggers():
     status_icons = {"proposed": "🟡", "approved": "🔵", "active": "🟢", "paused": "🔴"}
     df["status_display"] = df["status"].apply(lambda s: f"{status_icons.get(s, '⚪')} {s}")
 
-    display_cols = ["name", "status_display", "channel", "delay_minutes", "total_fires", "conversions", "conversion_rate_pct"]
+    display_cols = [
+        "name",
+        "status_display",
+        "channel",
+        "delay_minutes",
+        "total_fires",
+        "conversions",
+        "conversion_rate_pct",
+    ]
     display_df = df[[c for c in display_cols if c in df.columns]].copy()
 
     st.dataframe(
