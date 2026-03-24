@@ -115,7 +115,14 @@ def _start_claude_mode(resume: bool = True) -> None:
 
     # Build the claude command — runs in ~/.growthclaw/ workspace
     workspace = str(GROWTHCLAW_HOME)
-    resume_flag = "--resume" if resume else ""
+
+    # Only use --resume if there are existing conversations
+    resume_flag = ""
+    if resume:
+        claude_projects = Path.home() / ".claude" / "projects"
+        if claude_projects.exists() and any(claude_projects.iterdir()):
+            resume_flag = "--resume"
+
     claude_cmd = f"cd {workspace} && claude {resume_flag}"
 
     # Start tmux session
