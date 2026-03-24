@@ -116,11 +116,21 @@ def _start_claude_mode(resume: bool = True) -> None:
     # Build the claude command — runs in ~/.growthclaw/ workspace
     workspace = str(GROWTHCLAW_HOME)
 
-    # Only use --resume if there are existing conversations
+    # Only use --resume if there's a previous session in THIS workspace
     resume_flag = ""
     if resume:
+        # Check for Claude sessions specific to the growthclaw workspace
+        import hashlib
+
+        workspace_hash = hashlib.sha256(workspace.encode()).hexdigest()[:16]
         claude_projects = Path.home() / ".claude" / "projects"
-        if claude_projects.exists() and any(claude_projects.iterdir()):
+        has_session = False
+        if claude_projects.exists():
+            for d in claude_projects.iterdir():
+                if workspace_hash in d.name or "growthclaw" in d.name.lower():
+                    has_session = any(d.glob("*.jsonl"))
+                    break
+        if has_session:
             resume_flag = "--resume"
 
     claude_cmd = f"cd {workspace} && claude {resume_flag}"
