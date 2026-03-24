@@ -90,10 +90,26 @@ class GrowthClaw:
         assert self.customer_pool and self.internal_pool
 
         # Auto-run migrations if schema doesn't exist
+        needs_migrate = False
         try:
-            async with self.internal_pool.acquire() as conn:
-                await conn.fetchval("SELECT 1 FROM growthclaw.schema_map LIMIT 0")
+            check_conn = await asyncpg.connect(dsn=self.settings.growthclaw_database_url)
+            try:
+                await check_conn.fetchval(
+                    "SELECT 1 FROM information_schema.tables "
+                    "WHERE table_schema = 'growthclaw' AND table_name = 'schema_map'"
+                )
+                result = await check_conn.fetchval(
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                    "WHERE table_schema = 'growthclaw'"
+                )
+                if not result or result == 0:
+                    needs_migrate = True
+            finally:
+                await check_conn.close()
         except Exception:
+            needs_migrate = True
+
+        if needs_migrate:
             print("Running migrations (first time setup)...")
             from growthclaw.migrate import run_migrations
 
