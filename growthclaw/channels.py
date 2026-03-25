@@ -159,8 +159,23 @@ def setup_permissions(mode: str = "recommended") -> None:
     print("  ────────────────────────")
     print()
 
-    project_settings = Path.cwd() / ".claude" / "settings.json"
+    workspace = _get_workspace()
+    project_settings = workspace / ".claude" / "settings.json"
     project_settings.parent.mkdir(parents=True, exist_ok=True)
+
+    # Copy hooks from installed package to workspace
+    hooks_dest = workspace / "hooks"
+    hooks_dest.mkdir(exist_ok=True)
+    hooks_source = Path(__file__).parent / "hooks"
+    if hooks_source.exists():
+        for hook_file in hooks_source.glob("*.py"):
+            shutil.copy2(hook_file, hooks_dest / hook_file.name)
+
+    # Use the workspace venv python and workspace hooks path
+    python_path = str(workspace / ".venv" / "bin" / "python3")
+    if not Path(python_path).exists():
+        python_path = sys.executable
+    hook_script = str(hooks_dest / "post_tool_use.py")
 
     if mode == "recommended":
         settings = {
@@ -192,7 +207,7 @@ def setup_permissions(mode: str = "recommended") -> None:
                         "hooks": [
                             {
                                 "type": "command",
-                                "command": f"{sys.executable} {Path.cwd()}/growthclaw/hooks/post_tool_use.py",
+                                "command": f"{python_path} {hook_script}",
                             }
                         ],
                     }
@@ -236,7 +251,7 @@ def setup_permissions(mode: str = "recommended") -> None:
                         "hooks": [
                             {
                                 "type": "command",
-                                "command": f"{sys.executable} {Path.cwd()}/growthclaw/hooks/post_tool_use.py",
+                                "command": f"{python_path} {hook_script}",
                             }
                         ],
                     }
