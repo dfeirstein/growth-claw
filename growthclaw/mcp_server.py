@@ -450,7 +450,9 @@ async def handle_gc_get_pending_events(args: dict) -> str:
 
 
 async def handle_gc_compose_message(args: dict) -> str:
-    event_queue_id = args["event_queue_id"]
+    from uuid import UUID
+
+    event_queue_id = UUID(args["event_queue_id"])
     message_body = args["message_body"]
     message_subject = args.get("message_subject")
     conn = await _get_conn()
@@ -476,13 +478,14 @@ async def handle_gc_compose_message(args: dict) -> str:
 
 async def handle_gc_send_message(args: dict) -> str:
     from datetime import UTC, datetime
-    from uuid import uuid4
+    from uuid import UUID, uuid4
+
+    event_queue_id = UUID(args["event_queue_id"])
 
     from growthclaw.models.journey import Journey
     from growthclaw.outreach.email_sender import EmailSender
     from growthclaw.outreach.sms_sender import SMSSender
 
-    event_queue_id = args["event_queue_id"]
     settings = get_settings()
     conn = await _get_conn()
     try:

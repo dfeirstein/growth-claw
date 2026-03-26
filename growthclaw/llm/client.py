@@ -144,7 +144,7 @@ class LLMClient:
                 await record_usage(
                     conn,
                     provider=provider,
-                    model=self._get_model_name(provider),
+                    model=self._get_model_name(provider, purpose),
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     purpose=purpose,
@@ -155,11 +155,13 @@ class LLMClient:
         except Exception as e:
             logger.debug("Usage tracking skipped: %s", e)
 
-    def _get_model_name(self, provider: str) -> str:
+    def _get_model_name(self, provider: str, purpose: str = "general") -> str:
         if provider == "nvidia":
             return "nvidia/nemotron-3-super-120b-a12b"
         if provider == "anthropic":
-            return "claude-sonnet-4-6"
+            from growthclaw.llm.anthropic_fallback import model_for_purpose
+
+            return model_for_purpose(purpose)
         return provider
 
     async def call_json(

@@ -38,7 +38,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from growthclaw.config import Settings, get_settings
 from growthclaw.outreach import channel_resolver
 from growthclaw.triggers import trigger_evaluator, trigger_store
-from growthclaw.triggers.frequency_manager import check_global_frequency, record_send
+from growthclaw.triggers.frequency_manager import check_global_frequency
 
 logger = logging.getLogger("growthclaw.harness")
 
@@ -286,10 +286,10 @@ class Harness:
                     ar_arm,
                 )
 
-            # Record the trigger fire and frequency send for cap tracking
+            # Record the trigger fire (frequency send recorded later at actual send time
+            # by gc_send_message MCP tool — recording here would double-count)
             async with self.internal_pool.acquire() as iconn:
                 await trigger_evaluator.record_fire(iconn, event.user_id, trigger)
-                await record_send(iconn, event.user_id, trigger.channel)
 
             logger.info("Event queued: user=%s trigger=%s channel=%s", event.user_id, trigger.name, trigger.channel)
 
