@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     # System settings
     dry_run: bool = Field(default=True, alias="GROWTHCLAW_DRY_RUN")
     sample_rows: int = Field(default=500, alias="GROWTHCLAW_SAMPLE_ROWS")
+    standalone_mode: bool = Field(default=False, alias="STANDALONE_MODE")
 
     model_config = {
         "env_file": _find_env_file(),
@@ -78,7 +79,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_llm_keys(self) -> Settings:
-        if not self.nvidia_api_key and not self.anthropic_api_key:
+        # In harness mode (standalone_mode=False), Claude Code handles all LLM calls
+        # via MCP tools, so API keys are optional. In standalone mode, direct API
+        # calls require at least one key.
+        if self.standalone_mode and not self.nvidia_api_key and not self.anthropic_api_key:
             raise ValueError("At least one LLM API key is required (NVIDIA_API_KEY or ANTHROPIC_API_KEY)")
         return self
 

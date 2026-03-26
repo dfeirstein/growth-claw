@@ -32,4 +32,4 @@ async def generate_hypothesis(
         known_patterns=ctx.get("known_patterns", []),
         guardrails=ctx.get("guardrails", []),
     )
-    return await llm_client.call_json(prompt, temperature=0.4)
+    return await llm_client.call_json(prompt, temperature=0.4, purpose="hypothesis_generation")

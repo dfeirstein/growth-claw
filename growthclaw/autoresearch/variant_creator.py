@@ -25,4 +25,4 @@ async def create_variant(
         hypothesis=hypothesis,
         trigger_id=trigger_id,
     )
-    return await llm_client.call_json(prompt, temperature=0.3)
+    return await llm_client.call_json(prompt, temperature=0.3, purpose="variant_creation")

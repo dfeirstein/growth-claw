@@ -29,7 +29,7 @@ async def map_concepts(
     logger.info("Sending schema classification to LLM (%d tables)", len(raw_schema.tables))
 
     # Call LLM and parse JSON response
-    result = await llm_client.call_json(prompt, temperature=0.1, max_tokens=4096)
+    result = await llm_client.call_json(prompt, temperature=0.1, max_tokens=4096, purpose="schema_classification")
 
     # Validate through Pydantic model
     concepts = BusinessConcepts.model_validate(result)

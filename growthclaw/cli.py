@@ -507,13 +507,19 @@ def daemon() -> None:
 
 @daemon.command(name="start")
 @click.option("--claude", "use_claude", is_flag=True, help="Run Claude Code CLI in tmux (with channels, MCP, skills)")
+@click.option("--harness", "use_harness", is_flag=True, help="Run unified harness (Python + Claude Code cron)")
 @click.option("--no-resume", is_flag=True, help="Start fresh Claude session (don't resume)")
-def daemon_start(use_claude: bool, no_resume: bool) -> None:
+def daemon_start(use_claude: bool, use_harness: bool, no_resume: bool) -> None:
     """Start the GrowthClaw daemon."""
-    from growthclaw.daemon import start
+    if use_harness:
+        from growthclaw.harness import run_harness
 
-    mode = "claude" if use_claude else "standalone"
-    start(mode=mode, resume=not no_resume)
+        asyncio.run(run_harness())
+    else:
+        from growthclaw.daemon import start
+
+        mode = "claude" if use_claude else "standalone"
+        start(mode=mode, resume=not no_resume)
 
 
 @daemon.command(name="stop")

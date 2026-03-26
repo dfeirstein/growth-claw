@@ -28,7 +28,7 @@ async def analyze_profile(
         trigger_context=trigger_context,
     )
 
-    result = await llm_client.call_json(prompt, temperature=0.1)
+    result = await llm_client.call_json(prompt, temperature=0.1, purpose="profile_analysis")
     brief = IntelligenceBrief.model_validate(result)
 
     logger.info("Profile analyzed: segment=%s, engagement=%s", brief.customer_segment, brief.engagement_level)

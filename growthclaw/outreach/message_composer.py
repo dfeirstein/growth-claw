@@ -38,7 +38,7 @@ async def compose(
         cta_link=cta_link,
     )
 
-    message = await llm_client.call(prompt, temperature=0.7, max_tokens=500)
+    message = await llm_client.call(prompt, temperature=0.7, max_tokens=500, purpose="compose_sms")
     message = message.strip().strip('"').strip("'")
 
     # For SMS, enforce 160 char limit
@@ -49,7 +49,7 @@ async def compose(
                 f"This SMS message is {len(message)} characters but must be under {SMS_MAX_LENGTH}. "
                 f"Shorten it while keeping the CTA link and key message:\n\n{message}"
             )
-            message = await llm_client.call(retry_prompt, temperature=0.5, max_tokens=200)
+            message = await llm_client.call(retry_prompt, temperature=0.5, max_tokens=200, purpose="compose_sms_retry")
             message = message.strip().strip('"').strip("'")
             if len(message) <= SMS_MAX_LENGTH:
                 break
@@ -83,7 +83,7 @@ async def compose_email(
         business_name=business_name or concepts.business_description,
     )
 
-    result = await llm_client.call_json(prompt, temperature=0.7)
+    result = await llm_client.call_json(prompt, temperature=0.7, purpose="compose_email")
 
     subject = result.get("subject", "")
     html_body = result.get("html_body", "")

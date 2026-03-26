@@ -178,7 +178,7 @@ async def analyze_funnel(
         time_to_activation_distribution=time_distribution,
     )
 
-    result = await llm_client.call_json(prompt, temperature=0.1)
+    result = await llm_client.call_json(prompt, temperature=0.1, purpose="funnel_analysis")
     funnel = Funnel.model_validate(result)
 
     logger.info(

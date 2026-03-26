@@ -98,7 +98,7 @@ async def evaluate_cycle(cycle_data: dict, llm_client: LLMClient) -> dict:
         duration_days=cycle_data.get("duration_days", 0),
     )
 
-    llm_result = await llm_client.call_json(prompt, temperature=0.1)
+    llm_result = await llm_client.call_json(prompt, temperature=0.1, purpose="experiment_evaluation")
 
     # Map LLM winner to a decision
     winner = llm_result.get("winner", "inconclusive").lower()

@@ -24,7 +24,9 @@ def render_template(template_name: str, **kwargs: Any) -> str:
 class LLMProvider(Protocol):
     """Protocol for LLM providers."""
 
-    async def call(self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096) -> str: ...
+    async def call(
+        self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096, purpose: str = "general"
+    ) -> str: ...
 
 
 def _strip_code_fences(text: str) -> str:
@@ -101,7 +103,7 @@ class LLMClient:
         """Call a specific provider with logging and usage tracking."""
         start = time.monotonic()
         try:
-            result = await provider.call(prompt, temperature=temperature, max_tokens=max_tokens)
+            result = await provider.call(prompt, temperature=temperature, max_tokens=max_tokens, purpose=purpose)
             elapsed_ms = round((time.monotonic() - start) * 1000)
             logger.info(
                 "LLM call succeeded",
@@ -157,7 +159,7 @@ class LLMClient:
         if provider == "nvidia":
             return "nvidia/nemotron-3-super-120b-a12b"
         if provider == "anthropic":
-            return "claude-sonnet-4-20250514"
+            return "claude-sonnet-4-6"
         return provider
 
     async def call_json(

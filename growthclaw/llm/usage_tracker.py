@@ -12,7 +12,9 @@ logger = logging.getLogger("growthclaw.llm.usage")
 # Estimated costs per 1M tokens (cents) — March 2026
 COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "subscription": {"input": 0, "output": 0},  # Free with Claude Code subscription
-    "anthropic": {"input": 300, "output": 1500},  # Sonnet: $3/$15 per M
+    "anthropic_sonnet": {"input": 300, "output": 1500},  # Sonnet 4.6: $3/$15 per M
+    "anthropic_opus": {"input": 500, "output": 2500},  # Opus 4.6: $5/$25 per M
+    "anthropic": {"input": 300, "output": 1500},  # Default to Sonnet rates
     "nvidia": {"input": 200, "output": 200},  # NIM cloud: ~$2/$2 per M
     "nvidia_local": {"input": 0, "output": 0},  # Self-hosted: no per-token cost
 }

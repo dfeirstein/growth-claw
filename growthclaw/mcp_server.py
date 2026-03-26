@@ -115,6 +115,53 @@ TOOLS = [
         "description": "Show LLM usage stats: calls, tokens, and estimated costs by provider (last 30 days)",
         "inputSchema": {"type": "object", "properties": {}, "required": []},
     },
+    {
+        "name": "gc_get_pending_events",
+        "description": "Get pending events from event_queue ready for message composition, with trigger context",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"limit": {"type": "integer", "description": "Max events to return (default 20)"}},
+            "required": [],
+        },
+    },
+    {
+        "name": "gc_compose_message",
+        "description": "Update an event_queue entry with a composed message body (and optional subject for email)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "event_queue_id": {"type": "string", "description": "UUID of the event_queue entry"},
+                "message_body": {"type": "string", "description": "Composed message body (SMS text or email HTML)"},
+                "message_subject": {"type": "string", "description": "Email subject line (optional, email only)"},
+            },
+            "required": ["event_queue_id", "message_body"],
+        },
+    },
+    {
+        "name": "gc_send_message",
+        "description": "Send a composed message via the appropriate channel (Twilio SMS or email). Checks DRY_RUN.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "event_queue_id": {"type": "string", "description": "UUID of the event_queue entry to send"},
+            },
+            "required": ["event_queue_id"],
+        },
+    },
+    {
+        "name": "gc_get_workspace_context",
+        "description": "Get workspace context files (VOICE.md, SOUL.md, BUSINESS.md, etc.) for message composition",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string",
+                    "description": "Specific file name (e.g. 'VOICE.md') or 'all' for everything",
+                },
+            },
+            "required": ["file"],
+        },
+    },
 ]
 
 
@@ -367,6 +414,186 @@ async def handle_gc_llm_usage(args: dict) -> str:
         return json.dumps({"error": str(e)})
 
 
+async def handle_gc_get_pending_events(args: dict) -> str:
+    limit = args.get("limit", 20)
+    conn = await _get_conn()
+    try:
+        rows = await conn.fetch(
+            """
+            SELECT eq.id, eq.user_id, eq.trigger_id, eq.contact_value, eq.channel,
+                   eq.profile_data, eq.intelligence, eq.ar_cycle_id, eq.ar_arm,
+                   eq.status, eq.created_at,
+                   t.name as trigger_name, t.description as trigger_description,
+                   t.message_context, t.channel as trigger_channel
+            FROM growthclaw.event_queue eq
+            JOIN growthclaw.triggers t ON t.id = eq.trigger_id
+            WHERE eq.status = 'pending'
+            ORDER BY eq.created_at
+            LIMIT $1
+            """,
+            limit,
+        )
+        events = []
+        for r in rows:
+            event = dict(r)
+            # Parse JSONB fields if they are strings
+            for field in ("profile_data", "intelligence", "message_context"):
+                if field in event and isinstance(event[field], str):
+                    try:
+                        event[field] = json.loads(event[field])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            events.append(event)
+        return json.dumps(events, indent=2, default=_json_serial)
+    finally:
+        await conn.close()
+
+
+async def handle_gc_compose_message(args: dict) -> str:
+    event_queue_id = args["event_queue_id"]
+    message_body = args["message_body"]
+    message_subject = args.get("message_subject")
+    conn = await _get_conn()
+    try:
+        result = await conn.execute(
+            """
+            UPDATE growthclaw.event_queue
+            SET message_body = $1, message_subject = $2, status = 'composed', composed_at = NOW()
+            WHERE id = $3
+            """,
+            message_body,
+            message_subject,
+            event_queue_id,
+        )
+        count = int(result.split()[-1]) if result else 0
+        if count > 0:
+            return json.dumps({"status": "composed", "event_queue_id": event_queue_id})
+        else:
+            return json.dumps({"error": f"No pending event_queue entry found with id {event_queue_id}"})
+    finally:
+        await conn.close()
+
+
+async def handle_gc_send_message(args: dict) -> str:
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from growthclaw.models.journey import Journey
+    from growthclaw.outreach.email_sender import EmailSender
+    from growthclaw.outreach.sms_sender import SMSSender
+
+    event_queue_id = args["event_queue_id"]
+    settings = get_settings()
+    conn = await _get_conn()
+    try:
+        # Fetch the event_queue entry
+        row = await conn.fetchrow(
+            """
+            SELECT eq.*, t.name as trigger_name, t.channel as trigger_channel
+            FROM growthclaw.event_queue eq
+            JOIN growthclaw.triggers t ON t.id = eq.trigger_id
+            WHERE eq.id = $1
+            """,
+            event_queue_id,
+        )
+        if not row:
+            return json.dumps({"error": f"No event_queue entry found with id {event_queue_id}"})
+
+        if row["status"] != "composed":
+            return json.dumps({"error": f"Event is not composed (status={row['status']}). Compose first."})
+
+        channel = row["channel"] or row["trigger_channel"]
+        contact_value = row["contact_value"]
+        message_body = row["message_body"]
+        message_subject = row.get("message_subject")
+        provider_id = None
+
+        # Send via appropriate channel (respects DRY_RUN internally)
+        try:
+            if channel == "sms":
+                sender = SMSSender(settings)
+                provider_id = await sender.send(to=contact_value, body=message_body)
+            elif channel == "email":
+                email_sender = EmailSender(settings)
+                provider_id = await email_sender.send(
+                    to_email=contact_value,
+                    subject=message_subject or "",
+                    html_body=message_body,
+                )
+            else:
+                return json.dumps({"error": f"Unknown channel: {channel}"})
+        except Exception as e:
+            # Mark as failed
+            await conn.execute(
+                "UPDATE growthclaw.event_queue SET status = 'failed' WHERE id = $1",
+                event_queue_id,
+            )
+            return json.dumps({"status": "failed", "error": str(e)})
+
+        # Update event_queue status to sent
+        await conn.execute(
+            "UPDATE growthclaw.event_queue SET status = 'sent', provider_id = $1, sent_at = NOW() WHERE id = $2",
+            provider_id,
+            event_queue_id,
+        )
+
+        # Create a Journey record
+        journey = Journey(
+            id=uuid4(),
+            user_id=row["user_id"],
+            trigger_id=row["trigger_id"],
+            event_id=row.get("event_id"),
+            channel=channel,
+            contact_info=contact_value,
+            message_body=message_body,
+            provider_id=provider_id,
+            status="sent",
+            created_at=datetime.now(UTC),
+            sent_at=datetime.now(UTC),
+        )
+        from growthclaw.outreach.journey_store import create as create_journey
+
+        await create_journey(conn, journey)
+
+        # Record in global_frequency
+        await conn.execute(
+            """
+            INSERT INTO growthclaw.global_frequency (user_id, channel, sent_at)
+            VALUES ($1, $2, NOW())
+            """,
+            row["user_id"],
+            channel,
+        )
+
+        return json.dumps(
+            {
+                "status": "sent",
+                "provider_id": provider_id,
+                "journey_id": str(journey.id),
+                "dry_run": settings.dry_run,
+            },
+            indent=2,
+            default=_json_serial,
+        )
+    finally:
+        await conn.close()
+
+
+async def handle_gc_get_workspace_context(args: dict) -> str:
+    from growthclaw.workspace_context import WorkspaceContext
+
+    filename = args.get("file", "all")
+    ctx = WorkspaceContext()
+    if filename == "all":
+        result = ctx.get_all()
+        return json.dumps(result, indent=2, default=_json_serial)
+    else:
+        content = ctx.get(filename)
+        if content is None:
+            return json.dumps({"error": f"File '{filename}' not found in workspace"})
+        return json.dumps({filename: content}, indent=2, default=_json_serial)
+
+
 # ─── Tool Dispatch ───────────────────────────────────────────────────────────
 
 TOOL_HANDLERS = {
@@ -380,6 +607,10 @@ TOOL_HANDLERS = {
     "gc_memory_recall": handle_gc_memory_recall,
     "gc_memory_store": handle_gc_memory_store,
     "gc_llm_usage": handle_gc_llm_usage,
+    "gc_get_pending_events": handle_gc_get_pending_events,
+    "gc_compose_message": handle_gc_compose_message,
+    "gc_send_message": handle_gc_send_message,
+    "gc_get_workspace_context": handle_gc_get_workspace_context,
 }
 
 
