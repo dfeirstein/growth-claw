@@ -11,6 +11,7 @@ from typing import Any
 import asyncpg
 
 from growthclaw.models.trigger import TriggerEvent
+from growthclaw.triggers.event_source import EventSource
 
 logger = logging.getLogger("growthclaw.triggers.cdc_listener")
 
@@ -20,7 +21,7 @@ CHANNEL = "growthclaw_events"
 EventCallback = Callable[[TriggerEvent], Coroutine[Any, Any, None]]
 
 
-class CDCListener:
+class CDCListener(EventSource):
     """Listens for PostgreSQL NOTIFY events on the growthclaw_events channel."""
 
     def __init__(self, dsn: str, on_event: EventCallback) -> None:
@@ -28,6 +29,10 @@ class CDCListener:
         self.on_event = on_event
         self._conn: asyncpg.Connection | None = None  # type: ignore[type-arg]
         self._running = False
+
+    @property
+    def mode(self) -> str:
+        return "cdc"
 
     async def start(self) -> None:
         """Start listening for CDC events with automatic reconnection."""

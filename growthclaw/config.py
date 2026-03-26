@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     max_email_per_day: int = Field(default=2, alias="GROWTHCLAW_MAX_EMAIL_PER_DAY")
     max_email_per_week: int = Field(default=7, alias="GROWTHCLAW_MAX_EMAIL_PER_WEEK")
 
+    # Event source
+    event_mode: str = Field(default="poll", alias="EVENT_MODE")  # poll | cdc | wal
+    poll_interval_seconds: int = Field(default=30, alias="POLL_INTERVAL_SECONDS")
+
     # Memory system
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     memory_db_path: str = Field(default="data/memory", alias="GROWTHCLAW_MEMORY_PATH")

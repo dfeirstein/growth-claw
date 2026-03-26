@@ -99,8 +99,7 @@ class GrowthClaw:
                     "WHERE table_schema = 'growthclaw' AND table_name = 'schema_map'"
                 )
                 result = await check_conn.fetchval(
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                    "WHERE table_schema = 'growthclaw'"
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'growthclaw'"
                 )
                 if not result or result == 0:
                     needs_migrate = True
@@ -242,7 +241,7 @@ class GrowthClaw:
     # -------------------------------------------------------------------------
 
     async def start(self) -> None:
-        """Install CDC triggers on approved triggers and start the event loop."""
+        """Start the event listener and scheduler based on configured event_mode."""
         await self._ensure_pools()
         assert self.customer_pool and self.internal_pool
 
@@ -264,31 +263,70 @@ class GrowthClaw:
             print("No approved triggers found. Run 'growthclaw triggers approve' first.")
             return
 
-        # Install CDC triggers
-        print(f"Installing {len(triggers)} CDC triggers...")
-        async with self.customer_pool.acquire() as cconn:
-            async with self.internal_pool.acquire() as iconn:
-                for trigger in triggers:
-                    name = await trigger_installer.install_trigger(cconn, iconn, trigger, self.concepts)
-                    await trigger_store.set_active(iconn, trigger.id)
-                    print(f"  Installed: {name}")
+        # Select event source based on config
+        mode = self.settings.event_mode
 
-        # Start outcome checker (polls every 5 minutes)
-        self.scheduler.add_job(
-            self._check_outcomes,
-            "interval",
-            minutes=5,
-            id="outcome_checker",
-        )
+        if mode == "cdc":
+            # CDC mode: install PG triggers, listen via NOTIFY
+            print(f"Installing {len(triggers)} CDC triggers...")
+            async with self.customer_pool.acquire() as cconn:
+                async with self.internal_pool.acquire() as iconn:
+                    for trigger in triggers:
+                        name = await trigger_installer.install_trigger(cconn, iconn, trigger, self.concepts)
+                        await trigger_store.set_active(iconn, trigger.id)
+                        print(f"  Installed: {name}")
+
+            self.listener = cdc_listener.CDCListener(
+                dsn=self.settings.customer_database_url,
+                on_event=self._handle_event,
+            )
+
+        elif mode == "poll":
+            # Polling mode: read-only, no triggers installed on customer DB
+            from growthclaw.triggers.polling_listener import PollingListener
+
+            self.listener = PollingListener(
+                customer_dsn=self.settings.customer_database_url,
+                internal_dsn=self.settings.growthclaw_database_url,
+                triggers=triggers,
+                concepts=self.concepts.model_dump() if self.concepts else {},
+                on_event=self._handle_event,
+                poll_interval=self.settings.poll_interval_seconds,
+            )
+
+        else:
+            print(f"Unknown event_mode: {mode}. Use 'poll' or 'cdc'.")
+            return
+
+        # Start outcome checker (every 5 minutes)
+        self.scheduler.add_job(self._check_outcomes, "interval", minutes=5, id="outcome_checker")
+
+        # Start AutoResearch (every 6 hours)
+        from growthclaw.autoresearch.loop import AutoResearchLoop
+
+        self.autoresearch_loop = AutoResearchLoop(self.llm_client, self.settings)
+        self.scheduler.add_job(self._run_autoresearch, "interval", hours=6, id="autoresearch_loop")
+
         self.scheduler.start()
 
-        # Start CDC listener
-        print("\nListening for events...")
-        self.listener = cdc_listener.CDCListener(
-            dsn=self.settings.customer_database_url,
-            on_event=self._handle_event,
-        )
+        # Start event listener
+        print(f"\nListening for events (mode={mode})...")
         await self.listener.start()
+
+    async def _run_autoresearch(self) -> None:
+        """Run one AutoResearch cycle for each active trigger."""
+        assert self.internal_pool
+        try:
+            async with self.internal_pool.acquire() as conn:
+                triggers = await trigger_store.get_active(conn)
+                for trigger in triggers:
+                    try:
+                        result = await self.autoresearch_loop.run_cycle(trigger.id, conn)
+                        logger.info("AutoResearch: trigger=%s action=%s", trigger.name, result.get("action"))
+                    except Exception as e:
+                        logger.error("AutoResearch failed for %s: %s", trigger.name, e)
+        except Exception as e:
+            logger.error("AutoResearch cycle failed: %s", e)
 
     async def stop(self) -> None:
         """Stop the listener and uninstall CDC triggers."""
