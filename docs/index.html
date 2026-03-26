@@ -348,6 +348,58 @@
       margin-top: 12px;
     }
 
+    /* ─── Section 9: Architecture Flow ────────── */
+
+    .arch-flow {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      margin: 24px 0;
+      overflow-x: auto;
+    }
+
+    .arch-step {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .arch-label {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .arch-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .arch-arrow {
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      font-size: 20px;
+      padding: 16px 8px 0;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 600px) {
+      .arch-flow {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .arch-arrow {
+        text-align: center;
+        padding: 4px 0;
+        transform: rotate(90deg);
+      }
+    }
+
     /* ─── Footer ──────────────────────────────── */
 
     footer {
@@ -567,23 +619,43 @@ autogrow intelligence">copy</button>
       <div class="who-item"><span class="arrow">→</span> Anyone who thinks marketing automation should actually be automatic</div>
     </section>
 
-    <!-- ─── Section 8: Architecture ──────────── -->
+    <!-- ─── Section 8: The Nightly Sweep ────── -->
+    <section id="nightly">
+      <h2>While you sleep</h2>
+      <p style="margin-bottom: 24px;">Every night at 2 AM, AutoGrow steps back and looks at the big picture:</p>
+      <div class="pass-item"><strong>Cohort analysis</strong> — Which signup sources produce customers that actually stick?</div>
+      <div class="pass-item"><strong>Timing patterns</strong> — When do your best customers convert? What day, what hour?</div>
+      <div class="pass-item"><strong>Dormancy detection</strong> — Who's slipping away that no trigger is catching?</div>
+      <div class="pass-item"><strong>Whale identification</strong> — What do your highest-value customers have in common?</div>
+      <p style="margin-top: 20px;">Findings go into memory. The next morning, AutoResearch uses them to design better experiments. Over weeks, AutoGrow builds an understanding of your business that no human team could maintain.</p>
+    </section>
+
+    <!-- ─── Section 9: Architecture ──────────── -->
     <section id="architecture">
-      <h2>Under the hood</h2>
-      <div class="terminal">
-        <div class="terminal-header">
-          <span class="terminal-dot red"></span>
-          <span class="terminal-dot yellow"></span>
-          <span class="terminal-dot green"></span>
+      <h2>Claude Code is the brain. Python is the nervous system.</h2>
+      <p style="margin-bottom: 24px;">Python handles the fast, mechanical, zero-cost work. Claude Code handles everything that requires judgment.</p>
+      <div class="arch-flow">
+        <div class="arch-step">
+          <div class="arch-label w">Your Database</div>
+          <div class="arch-desc">any PostgreSQL</div>
         </div>
-        <div class="terminal-body"><span class="w">Your Database</span>  →  <span class="w">Python (fast loop)</span>  →  <span class="w">Event Queue</span>  →  <span class="g">Claude Code (brain)</span>
-                  poll every 30s          pending         reads your voice guide
-                  check cooldowns         events          composes each message
-                  enforce limits                          runs experiments
-                  <span class="d">zero cost</span>                               learns nightly
-                                                          rewrites itself weekly</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-label w">Python</div>
+          <div class="arch-desc">poll every 30s<br>check cooldowns<br>enforce limits<br><span class="d">zero cost</span></div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-label w">Event Queue</div>
+          <div class="arch-desc">approved events<br>waiting for brain</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-label g">Claude Code</div>
+          <div class="arch-desc">reads your voice guide<br>composes each message<br>runs experiments<br>learns nightly<br>rewrites itself weekly</div>
+        </div>
       </div>
-      <p class="arch-caption">Python handles the mechanical work (free, fast). Claude Code handles the judgment (smart, adaptive). Best of both.</p>
+      <p class="arch-caption">The nervous system runs 2,880 times a day for free. The brain wakes up when creativity and strategy are needed.</p>
     </section>
 
   </main>
