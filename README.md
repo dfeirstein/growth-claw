@@ -343,19 +343,6 @@ Three tiers, one codebase:
 - **Managed ($3K/mo)** — We run it for you. Connect your database, we handle everything.
 - **Cloud Intelligence ($99-499/mo)** — Tap into the shared experiment network. Every customer makes every other customer smarter.
 
-## Deployment
-
-```bash
-# Mac Mini (recommended for first deployment)
-growthclaw daemon start --harness
-
-# VPS (one-line setup)
-curl -sSL https://raw.githubusercontent.com/dfeirstein/growth-claw/main/scripts/install-vps.sh | bash
-
-# Docker
-docker build -t autogrow .
-docker run -e CUSTOMER_DATABASE_URL=... -e GROWTHCLAW_DATABASE_URL=... autogrow
-```
 
 ## Contributing
 
