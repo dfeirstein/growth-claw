@@ -23,6 +23,8 @@ class Journey(BaseModel):
     status: Literal["composed", "approved", "sent", "delivered", "failed"] = "composed"
     experiment_id: UUID | None = None
     experiment_arm: str | None = None
+    autoresearch_cycle_id: UUID | None = None
+    autoresearch_arm: str | None = None
     llm_reasoning: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     sent_at: datetime | None = None

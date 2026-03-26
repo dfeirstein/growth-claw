@@ -92,14 +92,14 @@ async def _get_trigger_results(
                 t.name AS trigger_name,
                 t.channel,
                 j.outcome,
-                j.message_text,
-                j.variant_arm,
+                j.message_body,
+                j.autoresearch_arm,
                 COUNT(*) AS count
             FROM growthclaw.journeys j
             JOIN growthclaw.triggers t ON t.id = j.trigger_id
             WHERE j.created_at > NOW() - INTERVAL '30 days'
               AND j.outcome IS NOT NULL
-            GROUP BY t.id, t.name, t.channel, j.outcome, j.message_text, j.variant_arm
+            GROUP BY t.id, t.name, t.channel, j.outcome, j.message_body, j.autoresearch_arm
             ORDER BY t.name, j.outcome
             """
         )
@@ -116,8 +116,8 @@ async def _get_trigger_results(
             triggers[tid]["outcomes"].append(
                 {
                     "outcome": row["outcome"],
-                    "message_text": row["message_text"] or "",
-                    "variant_arm": row["variant_arm"] or "control",
+                    "message_body": row["message_body"] or "",
+                    "autoresearch_arm": row["autoresearch_arm"] or "control",
                     "count": row["count"],
                 }
             )

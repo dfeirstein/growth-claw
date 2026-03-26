@@ -118,21 +118,35 @@ class GrowthClaw:
         print("\U0001f43e GrowthClaw — Connecting to your database...\n")
 
         # Step 1: Scan schema
-        print("[1/6] Scanning database schema...")
+        print("[1/7] Scanning database schema...")
         async with self.customer_pool.acquire() as conn:
             raw_schema = await schema_scanner.scan_schema_with_conn(conn)
         total_cols = sum(len(t.columns) for t in raw_schema.tables)
         print(f"  Found {len(raw_schema.tables)} tables, {total_cols} columns\n")
 
-        # Step 2: Sample data
-        print("[2/6] Sampling data distributions...")
+        # Step 2: Detect event source capabilities
+        print("[2/7] Detecting event source capabilities...")
+        async with self.customer_pool.acquire() as conn:
+            try:
+                wal_level = await conn.fetchval("SHOW wal_level")
+                if wal_level == "logical":
+                    print("  wal_level = logical (real-time WAL streaming available)")
+                    print(f"  Using: {self.settings.event_mode} mode (change with EVENT_MODE env var)\n")
+                else:
+                    print(f"  wal_level = {wal_level} (polling mode recommended)")
+                    print(f"  Using: {self.settings.event_mode} mode\n")
+            except Exception:
+                print("  Could not detect wal_level (using polling mode)\n")
+
+        # Step 3: Sample data
+        print("[3/7] Sampling data distributions...")
         async with self.customer_pool.acquire() as conn:
             samples = await data_sampler.sample_all(conn, raw_schema, self.settings.sample_rows)
         data_sampler.enrich_schema_with_samples(raw_schema, samples)
         print(f"  Sampled {len(samples)} tables with data\n")
 
         # Step 3: LLM classifies schema
-        print("[3/6] Understanding your business...")
+        print("[4/7] Understanding your business...")
         self.concepts = await concept_mapper.map_concepts(
             raw_schema,
             samples,
@@ -145,7 +159,7 @@ class GrowthClaw:
         print(f"  Activation event: {self.concepts.activation_event}\n")
 
         # Step 4: Analyze funnel
-        print("[4/6] Analyzing customer funnel...")
+        print("[5/7] Analyzing customer funnel...")
         async with self.customer_pool.acquire() as conn:
             self.funnel = await funnel_analyzer.analyze_funnel(self.concepts, conn, self.llm_client)
         stages_str = " -> ".join(s.name for s in self.funnel.stages)
@@ -154,7 +168,7 @@ class GrowthClaw:
             print(f"  Biggest drop-off: {self.funnel.biggest_dropoff.description}\n")
 
         # Step 5: Resolve relationships + propose triggers
-        print("[5/6] Proposing growth triggers...")
+        print("[6/7] Proposing growth triggers...")
         relationships = relationship_resolver.resolve_relationships(raw_schema, self.concepts)
         triggers = await trigger_proposer.propose_triggers(self.concepts, self.funnel, self.llm_client)
         for i, t in enumerate(triggers, 1):
@@ -163,7 +177,7 @@ class GrowthClaw:
         print()
 
         # Step 6: Persist everything
-        print("[6/6] Saving configuration...")
+        print("[7/7] Saving configuration...")
         async with self.internal_pool.acquire() as conn:
             await schema_store.save(
                 conn,
@@ -294,8 +308,18 @@ class GrowthClaw:
                 poll_interval=self.settings.poll_interval_seconds,
             )
 
+        elif mode == "wal":
+            from growthclaw.triggers.wal_listener import WALListener
+
+            self.listener = WALListener(
+                customer_dsn=self.settings.customer_database_url,
+                triggers=triggers,
+                concepts=self.concepts.model_dump() if self.concepts else {},
+                on_event=self._handle_event,
+            )
+
         else:
-            print(f"Unknown event_mode: {mode}. Use 'poll' or 'cdc'.")
+            print(f"Unknown event_mode: {mode}. Use 'poll', 'cdc', or 'wal'.")
             return
 
         # Start outcome checker (every 5 minutes)
@@ -472,6 +496,33 @@ class GrowthClaw:
                     logger.info("User %s hit frequency cap for %s", event.user_id, trigger.channel)
                     return
 
+            # AutoResearch variant assignment
+            ar_cycle_id = None
+            ar_arm = None
+            async with self.internal_pool.acquire() as iconn:
+                running_cycle = await iconn.fetchrow(
+                    "SELECT id, control_template, test_template "
+                    "FROM growthclaw.autoresearch_cycles "
+                    "WHERE trigger_id = $1 AND status = 'running' LIMIT 1",
+                    trigger.id,
+                )
+            if running_cycle:
+                import hashlib
+
+                hash_input = f"{event.user_id}:{running_cycle['id']}"
+                hash_val = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)  # noqa: S324
+                is_test = hash_val % 2 == 1
+                ar_arm = "test" if is_test else "control"
+                ar_cycle_id = running_cycle["id"]
+
+                # Increment send counter
+                arm_col = "test_sends" if is_test else "control_sends"
+                async with self.internal_pool.acquire() as iconn:
+                    await iconn.execute(
+                        f"UPDATE growthclaw.autoresearch_cycles SET {arm_col} = {arm_col} + 1 WHERE id = $1",
+                        running_cycle["id"],
+                    )
+
             # Compose message (SMS or email)
             provider_id = None
             if trigger.channel == "email":
@@ -495,6 +546,8 @@ class GrowthClaw:
                     message_body=message_body,
                     experiment_id=experiment.id if hasattr(experiment, "id") else None,
                     experiment_arm=arm.name if hasattr(arm, "name") else None,
+                    autoresearch_cycle_id=ar_cycle_id,
+                    autoresearch_arm=ar_arm,
                 )
                 async with self.internal_pool.acquire() as iconn:
                     await journey_store.create(iconn, journey)
@@ -527,6 +580,8 @@ class GrowthClaw:
                     message_body=message_body,
                     experiment_id=experiment.id if hasattr(experiment, "id") else None,
                     experiment_arm=arm.name if hasattr(arm, "name") else None,
+                    autoresearch_cycle_id=ar_cycle_id,
+                    autoresearch_arm=ar_arm,
                 )
                 async with self.internal_pool.acquire() as iconn:
                     await journey_store.create(iconn, journey)
