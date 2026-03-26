@@ -14,6 +14,8 @@ The human sets it up. After that, the system improves itself.
 ![Tests](https://img.shields.io/badge/tests-137%20passing-green)
 ![Claude Code](https://img.shields.io/badge/runtime-Claude_Code_Opus_4.6-blueviolet)
 
+[![AutoGrow Landing Page](docs/images/hero.png)](https://dfeirstein.github.io/growth-claw/)
+
 ## How the Compiler Works
 
 AutoGrow processes your database through six passes. The first four happen during onboarding (minutes). The last two run forever — getting smarter with every send.
