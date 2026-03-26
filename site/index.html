@@ -200,6 +200,15 @@
       margin-bottom: 8px;
     }
 
+    .hero-stat-line {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: var(--text);
+      max-width: 560px;
+      margin: 0 auto 12px;
+      line-height: 1.5;
+    }
+
     .hero .subtitle {
       font-size: 1rem;
       color: var(--text-muted);
@@ -456,7 +465,8 @@
     <section class="hero">
       <h1>autogrow</h1>
       <p class="tagline">The growth compiler.</p>
-      <p class="subtitle">Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and fixes it — autonomously.</p>
+      <p class="hero-stat-line"><span class="g">81.7%</span> of users were dropping off. AutoGrow found it in <span class="g">4 minutes</span> — and started fixing it.</p>
+      <p class="subtitle">Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and sends personalized outreach that gets smarter every day — autonomously.</p>
 
       <div class="install-box">
         <span>curl -sSL https://raw.githubusercontent.com/dfeirstein/growth-claw/main/scripts/install.sh | bash</span>
