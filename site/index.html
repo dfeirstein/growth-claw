@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoGrow — The Growth Compiler</title>
+  <meta name="description" content="The growth compiler. Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and fixes it — autonomously.">
+  <meta property="og:title" content="AutoGrow — The Growth Compiler">
+  <meta property="og:description" content="Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and fixes it — autonomously.">
+  <meta property="og:url" content="https://autogrow.bot">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AutoGrow — The Growth Compiler">
+  <meta name="twitter:description" content="Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and fixes it — autonomously.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='4' width='4' height='24' rx='1' fill='%2300ff88'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --text: #ffffff;
+      --text-muted: #b0b0b0;
+      --text-dim: #666666;
+      --accent: #00ff88;
+      --link: #00aaff;
+      --terminal-bg: #111111;
+      --terminal-border: #333333;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Inter', sans-serif;
+      --max-width: 720px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section {
+      padding: 60px 0;
+    }
+
+    h1, h2, h3 {
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin-bottom: 24px;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── Terminal Window ─────────────────────── */
+
+    .terminal {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 24px 0;
+    }
+
+    .terminal-header {
+      background: #1a1a1a;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .terminal-copy {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .terminal-body {
+      padding: 20px 24px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ─── Install Box ─────────────────────────── */
+
+    .install-box {
+      position: relative;
+      background: var(--terminal-bg);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 16px 70px 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--accent);
+      margin: 32px 0 24px;
+    }
+
+    /* ─── Copy Button ─────────────────────────── */
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--terminal-border);
+      color: var(--text-dim);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .install-box .copy-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* ─── Colored Spans (terminal output) ─────── */
+
+    .g { color: var(--accent); }
+    .b { color: var(--link); }
+    .w { color: var(--text); }
+    .d { color: var(--text-dim); }
+    .y { color: #febc2e; }
+
+    .stat-hl {
+      color: var(--accent);
+      font-size: 1.1em;
+      font-weight: 700;
+    }
+
+    /* ─── Section 1: Hero ─────────────────────── */
+
+    .hero {
+      padding: 100px 0 40px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      color: var(--accent);
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+
+    .hero .tagline {
+      font-size: 1.5rem;
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .hero .subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .hero-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .hero-links a {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .hero-links a:hover {
+      color: var(--text);
+    }
+
+    .hero-links img {
+      vertical-align: middle;
+    }
+
+    /* ─── Section 2: Demo ─────────────────────── */
+
+    .demo-caption {
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    /* ─── Section 3: Compiler Passes ──────────── */
+
+    .pass-item {
+      border-left: 3px solid var(--accent);
+      padding: 6px 0 6px 20px;
+      margin-bottom: 12px;
+    }
+
+    .pass-item strong {
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    /* ─── Section 4: What Makes It Different ──── */
+
+    .diff-block {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .diff-block h3 {
+      color: var(--accent);
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .diff-block p {
+      white-space: pre-line;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ─── Section 5: Numbers ──────────────────── */
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding: 48px 0;
+      border-top: 1px solid var(--terminal-border);
+      border-bottom: 1px solid var(--terminal-border);
+    }
+
+    .stat {
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .stat-number {
+      font-family: var(--font-mono);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-number.hero-stat {
+      font-size: 3rem;
+      text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ─── Section 6: Quickstart ───────────────── */
+
+    .terminal-body .comment {
+      color: var(--text-dim);
+    }
+    .terminal-body .cmd {
+      color: var(--text);
+    }
+
+    /* ─── Section 7: Who It's For ─────────────── */
+
+    .who-opener {
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .who-item {
+      padding: 4px 0;
+      font-size: 15px;
+    }
+
+    .who-item .arrow {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      margin-right: 8px;
+    }
+
+    /* ─── Section 8: Architecture ─────────────── */
+
+    .arch-caption {
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    /* ─── Footer ──────────────────────────────── */
+
+    footer {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+      text-align: center;
+      border-top: 1px solid var(--terminal-border);
+    }
+
+    .footer-brand {
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+    }
+
+    .footer-founder {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* ─── Mobile ──────────────────────────────── */
+
+    @media (max-width: 600px) {
+      main { padding: 0 16px; }
+      .hero { padding: 60px 0 30px; }
+      .hero h1 { font-size: 2.2rem; }
+      .hero .tagline { font-size: 1.2rem; }
+      .stats { flex-direction: column; gap: 20px; }
+      .stat-number { font-size: 2rem; }
+      .stat-number.hero-stat { font-size: 2.5rem; }
+      .terminal-body { font-size: 12px; padding: 16px; }
+      .install-box { font-size: 13px; padding-right: 60px; }
+      section { padding: 40px 0; }
+      footer { padding: 30px 16px 40px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+
+    <!-- ─── Section 1: Hero ──────────────────── -->
+    <section class="hero">
+      <h1>autogrow</h1>
+      <p class="tagline">The growth compiler.</p>
+      <p class="subtitle">Point it at any PostgreSQL database. It figures out your business, finds where customers drop off, and fixes it — autonomously.</p>
+
+      <div class="install-box">
+        <span>curl -sSL https://autogrow.bot/install | bash</span>
+        <button class="copy-btn" data-copy="curl -sSL https://autogrow.bot/install | bash">copy</button>
+      </div>
+
+      <div class="hero-links">
+        <a href="https://github.com/dfeirstein/growth-claw"><img src="https://img.shields.io/github/stars/dfeirstein/growth-claw?style=flat&color=00ff88&labelColor=1a1a1a" alt="GitHub stars"></a>
+        <span>&middot;</span>
+        <a href="https://github.com/dfeirstein/growth-claw">Docs</a>
+        <span>&middot;</span>
+        <a href="#">Discord</a>
+      </div>
+    </section>
+
+    <!-- ─── Section 2: Demo ──────────────────── -->
+    <section id="demo">
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">autogrow onboard</span>
+        </div>
+        <div class="terminal-body"><span class="d">$</span> <span class="w">autogrow onboard</span>
+
+<span class="b">🔍</span> Connecting to database (read-only)...
+<span class="g">✅</span> Connected
+
+<span class="y">📊</span> Discovering schema...
+   Found <span class="w">66 tables</span>, <span class="w">962 columns</span>
+
+<span class="y">🧠</span> Understanding your business...
+   Type: <span class="w">driver_service</span>
+   Customer table: <span class="w">users</span>
+   Activation: <span class="w">first ride booking</span>
+
+<span class="y">📉</span> Drop-off detected: <span class="w">signup → first_booking</span>
+   <span class="stat-hl">81.7%</span> of users never complete their first booking
+   Revenue impact: <span class="g">$47K/mo</span>
+
+<span class="y">💡</span> Proposed triggers:
+   1. <span class="g">[SMS]</span> booking_nudge — 2h after signup
+   2. <span class="g">[EMAIL]</span> onboarding_sequence — 24h, personalized by city
+   3. <span class="g">[SMS]</span> high_intent_reengage — 72h, "First ride on us"
+   4. <span class="g">[EMAIL]</span> referral_activation — on referral event
+   5. <span class="g">[SMS]</span> churn_prevention — 14 days dormant
+
+<span class="d">⏱️  4 minutes 38 seconds. Zero configuration.</span></div>
+      </div>
+      <p class="demo-caption">This ran on a real business. 77,000 users. 66 tables. No one told it what to look for.</p>
+    </section>
+
+    <!-- ─── Section 3: How It Works ──────────── -->
+    <section id="how-it-works">
+      <h2>How it works</h2>
+      <div class="pass-item"><strong>Parse</strong> — Reads every table, column, and relationship in your database</div>
+      <div class="pass-item"><strong>Understand</strong> — AI classifies what it found: customers, activations, transactions</div>
+      <div class="pass-item"><strong>Model</strong> — Maps the funnel, finds the biggest drop-off, computes reachability</div>
+      <div class="pass-item"><strong>Compile</strong> — Proposes triggers, composes personalized messages per recipient</div>
+      <div class="pass-item"><strong>Optimize</strong> — Tests variants every 6 hours. Measures real conversions. Promotes winners.</div>
+      <div class="pass-item"><strong>Self-Host</strong> — Rewrites its own prompts based on what worked. The compiler improves itself.</div>
+    </section>
+
+    <!-- ─── Section 4: What Makes It Different ── -->
+    <section id="different">
+      <div class="diff-block">
+        <h3>Zero Config</h3>
+        <p>Other tools: define your funnel, build workflows, write templates, configure segments, set up A/B tests.
+
+AutoGrow: connect your database. Done.</p>
+      </div>
+
+      <div class="diff-block">
+        <h3>Self-Improving</h3>
+        <p>Day 1: discovers your funnel.
+Day 30: has run 47 experiments autonomously.
+Day 100: knows your business better than your marketing team.
+Day 365: has rewritten its own playbook 12 times.</p>
+      </div>
+
+      <div class="diff-block">
+        <h3>Read-Only</h3>
+        <p>AutoGrow never writes to your database.
+Never touches your send infrastructure.
+Your Postgres. Your Resend. Your Twilio.
+AutoGrow is the brain. You own everything else.</p>
+      </div>
+    </section>
+
+    <!-- ─── Section 5: Numbers ───────────────── -->
+    <section id="numbers">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number hero-stat">81.7%</div>
+          <div class="stat-label">drop-off found in 4 minutes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">0</div>
+          <div class="stat-label">employees required</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">&#x221E;</div>
+          <div class="stat-label">experiments while you sleep</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Section 6: Quickstart ────────────── -->
+    <section id="quickstart">
+      <h2>Quickstart</h2>
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">bash</span>
+          <div class="terminal-copy">
+            <button class="copy-btn" data-copy="curl -sSL https://autogrow.bot/install | bash
+
+autogrow init
+autogrow onboard
+
+autogrow triggers list
+
+autogrow start
+
+autogrow dashboard
+autogrow research
+autogrow intelligence">copy</button>
+          </div>
+        </div>
+        <div class="terminal-body"><span class="comment"># Install</span>
+<span class="cmd">curl -sSL https://autogrow.bot/install | bash</span>
+
+<span class="comment"># Set up</span>
+<span class="cmd">autogrow init</span>              <span class="comment"># creates ~/.autogrow/ workspace</span>
+<span class="cmd">autogrow onboard</span>           <span class="comment"># discovers your database</span>
+
+<span class="comment"># Review</span>
+<span class="cmd">autogrow triggers list</span>     <span class="comment"># see what it found</span>
+
+<span class="comment"># Launch</span>
+<span class="cmd">autogrow start</span>             <span class="comment"># begins watching + sending</span>
+
+<span class="comment"># Monitor</span>
+<span class="cmd">autogrow dashboard</span>         <span class="comment"># open web dashboard</span>
+<span class="cmd">autogrow research</span>          <span class="comment"># see experiment results</span>
+<span class="cmd">autogrow intelligence</span>      <span class="comment"># see what it's learned</span></div>
+      </div>
+    </section>
+
+    <!-- ─── Section 7: Who It's For ──────────── -->
+    <section id="who">
+      <h2>Who it's for</h2>
+      <p class="who-opener">Built for people who'd rather read a man page than sit through a demo.</p>
+      <div class="who-item"><span class="arrow">→</span> Growth engineers tired of configuring Customer.io flows</div>
+      <div class="who-item"><span class="arrow">→</span> Technical founders who want growth on autopilot</div>
+      <div class="who-item"><span class="arrow">→</span> SaaS teams who know their funnel leaks but can't hire fast enough</div>
+      <div class="who-item"><span class="arrow">→</span> Anyone who thinks marketing automation should actually be automatic</div>
+    </section>
+
+    <!-- ─── Section 8: Architecture ──────────── -->
+    <section id="architecture">
+      <h2>Under the hood</h2>
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <div class="terminal-body"><span class="w">Your Database</span>  →  <span class="w">Python (fast loop)</span>  →  <span class="w">Event Queue</span>  →  <span class="g">Claude Code (brain)</span>
+                  poll every 30s          pending         reads your voice guide
+                  check cooldowns         events          composes each message
+                  enforce limits                          runs experiments
+                  <span class="d">zero cost</span>                               learns nightly
+                                                          rewrites itself weekly</div>
+      </div>
+      <p class="arch-caption">Python handles the mechanical work (free, fast). Claude Code handles the judgment (smart, adaptive). Best of both.</p>
+    </section>
+
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────── -->
+  <footer>
+    <div class="footer-brand">autogrow.bot</div>
+    <div class="footer-links">
+      <a href="https://github.com/dfeirstein/growth-claw">GitHub</a>
+      <span> &middot; </span>
+      <a href="https://github.com/dfeirstein/growth-claw">Docs</a>
+      <span> &middot; </span>
+      <a href="#">Discord</a>
+      <span> &middot; </span>
+      <span>MIT License</span>
+    </div>
+    <div class="footer-founder">Built by Douglas Feirstein</div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var text = btn.getAttribute('data-copy');
+        navigator.clipboard.writeText(text).then(function() {
+          var orig = btn.textContent;
+          btn.textContent = 'copied!';
+          btn.style.color = '#00ff88';
+          btn.style.borderColor = '#00ff88';
+          setTimeout(function() {
+            btn.textContent = orig;
+            btn.style.color = '';
+            btn.style.borderColor = '';
+          }, 2000);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
