@@ -248,3 +248,53 @@ GROWTHCLAW_SAMPLE_ROWS=500
 # OPENAI_API_KEY=
 """
     path.write_text(content)
+
+
+def generate_compiler_md(
+    event_source: str,
+    active_triggers: int,
+    total_sends: int,
+    total_experiments: int,
+    pass_statuses: list[dict],
+    latest_findings: list[str],
+) -> None:
+    """Generate COMPILER.md from compilation pass status and write to ~/.growthclaw/.
+
+    Args:
+        event_source: The event source mode (e.g. "poll" or "cdc").
+        active_triggers: Number of currently active triggers.
+        total_sends: Total messages sent.
+        total_experiments: Total AutoResearch experiments run.
+        pass_statuses: List of dicts with keys: pass_name, status, last_run_at.
+        latest_findings: List of finding description strings.
+    """
+    template_path = TEMPLATES_DIR / "COMPILER.md"
+    template = template_path.read_text()
+
+    # Build pass status table
+    table_lines = ["| Pass | Status | Last Run |", "|------|--------|----------|"]
+    for ps in pass_statuses:
+        name = ps.get("pass_name", "?")
+        status = ps.get("status", "pending")
+        last_run = ps.get("last_run_at", "never")
+        table_lines.append(f"| {name} | {status} | {last_run} |")
+    pass_status_table = "\n".join(table_lines)
+
+    # Build latest findings list
+    if latest_findings:
+        findings_lines = [f"- {f}" for f in latest_findings]
+        findings_text = "\n".join(findings_lines)
+    else:
+        findings_text = "No findings yet."
+
+    content = (
+        template.replace("{event_source}", str(event_source))
+        .replace("{active_triggers}", str(active_triggers))
+        .replace("{total_sends}", str(total_sends))
+        .replace("{total_experiments}", str(total_experiments))
+        .replace("{pass_status_table}", pass_status_table)
+        .replace("{latest_findings}", findings_text)
+    )
+
+    dest = GROWTHCLAW_HOME / "COMPILER.md"
+    dest.write_text(content)

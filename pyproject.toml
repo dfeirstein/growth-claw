@@ -37,6 +37,7 @@ dev = [
 ]
 
 [project.scripts]
+autogrow = "growthclaw.cli:main"
 growthclaw = "growthclaw.cli:main"
 
 [tool.setuptools.packages.find]

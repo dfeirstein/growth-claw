@@ -1,0 +1,54 @@
+You are optimizing outreach message templates based on real performance data.
+
+## Trigger Results (journeys with outcomes, grouped by trigger)
+{{ trigger_results | tojson(indent=2) }}
+
+## Current Prompt Templates
+{% for template in current_templates %}
+### {{ template.name }}
+```
+{{ template.content }}
+```
+{% endfor %}
+
+## Validated Patterns from Memory
+{% if memory_patterns %}
+{% for pattern in memory_patterns %}
+- {{ pattern }}
+{% endfor %}
+{% else %}
+No validated patterns available yet.
+{% endif %}
+
+## Instructions
+1. Analyze the performance data to identify which message patterns lead to higher conversion rates.
+2. Look for common traits in converted vs non-converted journeys.
+3. Identify winning patterns (tone, length, CTA style, personalization, urgency level).
+4. Propose specific template rewrites that incorporate the winning patterns.
+5. Keep the same template variables/placeholders — only change the copy and structure.
+
+## Rules
+- Base analysis on actual outcome data, not assumptions.
+- Preserve all required template variables (Jinja2 placeholders like {{ '{{' }} variable {{ '}}' }}).
+- Do not propose changes unless the data supports them.
+- Explain your reasoning clearly for each proposed rewrite.
+
+## Response Format
+
+Respond with ONLY valid JSON:
+{
+  "analysis": "Summary of what the data shows about message performance",
+  "winning_patterns": [
+    "Description of a pattern that correlates with higher conversion"
+  ],
+  "proposed_rewrites": [
+    {
+      "template_name": "name_of_template.j2",
+      "current_version": "Brief description of the current template approach",
+      "proposed_version": "The full rewritten template content",
+      "reasoning": "Why this rewrite should improve performance based on the data"
+    }
+  ]
+}
+
+Return ONLY valid JSON. No explanation, no markdown fences.
