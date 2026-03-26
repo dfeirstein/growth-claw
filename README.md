@@ -94,19 +94,99 @@ Claude Code wakes up every 15 minutes, reads your brand voice and business conte
 | **Run the nightly strategic analysis** | **Claude Code** | **Sees patterns humans miss** |
 | **Rewrite its own message templates** | **Claude Code** | **The compiler improves itself** |
 
-## Quick Start
+## Getting Started
+
+### Step 1: Install
+
+One command. Installs Python 3.13, Claude Code CLI, and AutoGrow. Asks you to choose harness mode (recommended) or standalone mode.
 
 ```bash
-# Install
 curl -sSL https://raw.githubusercontent.com/dfeirstein/growth-claw/main/scripts/install.sh | bash
+```
 
-# Set up + discover your business
-growthclaw init                       # Create workspace
-growthclaw onboard                    # Connect to your database
+### Step 2: Log in to Claude Code
 
-# Review what it found, then start
-growthclaw triggers approve --all     # Approve proposed triggers
-growthclaw daemon start --harness     # Start the compiler
+Claude Code is AutoGrow's brain. You need to authenticate once — this opens a browser.
+
+```bash
+claude
+```
+
+Sign in, then type `/exit` to close. You'll need a [Claude Max plan](https://claude.ai/settings/billing) ($200/mo — AutoGrow uses ~3% of the daily quota).
+
+> **No Max plan?** Choose standalone mode during install instead. It uses direct API calls and only needs an Anthropic API key.
+
+### Step 3: Create the internal database
+
+AutoGrow needs its own PostgreSQL database to store triggers, journeys, experiments, and memory. This is separate from your customer database.
+
+```bash
+createdb autogrow_internal
+```
+
+### Step 4: Configure credentials
+
+```bash
+nano ~/.growthclaw/.env
+```
+
+Fill in these two required values:
+
+```bash
+CUSTOMER_DATABASE_URL=postgresql://user:pass@host:5432/your_database
+GROWTHCLAW_DATABASE_URL=postgresql://localhost:5432/autogrow_internal
+```
+
+Everything else is optional for the first run. AutoGrow starts in dry run mode — it composes messages but doesn't send them until you're ready.
+
+### Step 5: Initialize and discover
+
+```bash
+growthclaw init                       # Set up workspace
+growthclaw migrate                    # Create internal tables
+growthclaw onboard                    # Discover your business (1-2 min)
+```
+
+### Step 6: Review and approve triggers
+
+```bash
+growthclaw triggers list              # See what it proposed
+growthclaw triggers approve --all     # Approve all (or review one by one)
+```
+
+### Step 7: Start the compiler
+
+```bash
+# Harness mode (recommended) — Python fast loop + Claude Code brain
+growthclaw daemon start --harness
+
+# Or standalone mode — Python handles everything via API calls
+growthclaw start
+```
+
+### Step 8: Verify it's working
+
+```bash
+growthclaw health                     # System diagnostics
+growthclaw journeys                   # See composed messages (dry run)
+growthclaw dashboard                  # Open web dashboard at localhost:8501
+```
+
+### Step 9: Go live (when ready)
+
+Edit `~/.growthclaw/.env` — add your Twilio and/or Resend credentials, then flip the switch:
+
+```bash
+# In ~/.growthclaw/.env, change:
+GROWTHCLAW_DRY_RUN=false
+
+# Add at least one channel:
+TWILIO_ACCOUNT_SID=AC...
+TWILIO_AUTH_TOKEN=...
+TWILIO_FROM_NUMBER=+1...
+
+# Restart
+growthclaw daemon start --harness
 ```
 
 ## What Onboarding Looks Like
@@ -244,11 +324,14 @@ AutoGrow's AutoResearch loop tests across channels automatically — once push a
 
 ## Requirements
 
-- **Python 3.13+**
-- **PostgreSQL** — your database (read-only access) + an internal database for AutoGrow's state
-- **Claude Code** — Max plan for the harness runtime
-- **Twilio** — for SMS (optional — dry run mode works without it)
-- **Resend** — for email (optional — dry run mode works without it)
+| What | Why | Required? |
+|------|-----|-----------|
+| **Python 3.13+** | Runtime | Yes (installer handles it) |
+| **PostgreSQL** | Your customer DB (read-only) + AutoGrow internal DB | Yes |
+| **Claude Code Max plan** | The brain — composes, experiments, learns | Yes for harness mode |
+| **Anthropic API key** | Direct LLM calls | Only for standalone mode |
+| **Twilio** | SMS delivery | Optional — dry run works without it |
+| **Resend** | Email delivery | Optional — dry run works without it |
 
 ## The Vision
 
@@ -266,8 +349,8 @@ Three tiers, one codebase:
 # Mac Mini (recommended for first deployment)
 growthclaw daemon start --harness
 
-# VPS
-bash <(curl -sSL https://raw.githubusercontent.com/dfeirstein/growth-claw/main/scripts/install-vps.sh)
+# VPS (one-line setup)
+curl -sSL https://raw.githubusercontent.com/dfeirstein/growth-claw/main/scripts/install-vps.sh | bash
 
 # Docker
 docker build -t autogrow .
