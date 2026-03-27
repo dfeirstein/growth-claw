@@ -60,9 +60,16 @@ async def load(
         logger.info("Profile for user %s is stale (computed %s)", user_id, computed_at)
         return None
 
+    import json as _json
+
+    raw = row["raw_data"]
+    raw_data = _json.loads(raw) if isinstance(raw, str) else raw
+    analysis_val = row["analysis"]
+    analysis_data = _json.loads(analysis_val) if isinstance(analysis_val, str) else analysis_val
+
     return CustomerProfile(
         user_id=row["user_id"],
-        raw_data=row["raw_data"],
-        analysis=IntelligenceBrief.model_validate(row["analysis"]),
+        raw_data=raw_data,
+        analysis=IntelligenceBrief.model_validate(analysis_data),
         computed_at=computed_at,
     )
