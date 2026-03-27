@@ -126,25 +126,19 @@ AutoGrow needs its own PostgreSQL database to store triggers, journeys, experime
 createdb autogrow_internal
 ```
 
-### Step 4: Configure credentials
+### Step 4: Run the setup wizard
+
+The wizard walks you through everything — database URLs, API keys, SMS/email providers, channels. No editing config files by hand.
 
 ```bash
-nano ~/.growthclaw/.env
+growthclaw init
 ```
 
-Fill in these two required values:
+It'll ask for your customer database URL, internal database URL, Anthropic API key, and optionally Twilio/Resend credentials. Everything else starts in dry run mode — safe to skip outreach channels on the first run.
+
+### Step 5: Discover your business
 
 ```bash
-CUSTOMER_DATABASE_URL=postgresql://user:pass@host:5432/your_database
-GROWTHCLAW_DATABASE_URL=postgresql://localhost:5432/autogrow_internal
-```
-
-Everything else is optional for the first run. AutoGrow starts in dry run mode — it composes messages but doesn't send them until you're ready.
-
-### Step 5: Initialize and discover
-
-```bash
-growthclaw init                       # Set up workspace
 growthclaw migrate                    # Create internal tables
 growthclaw onboard                    # Discover your business (1-2 min)
 ```
