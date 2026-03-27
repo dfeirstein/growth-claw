@@ -1,4 +1,4 @@
-"""Anthropic Claude LLM provider with per-task model routing."""
+"""Anthropic Claude LLM provider with per-task model routing and streaming."""
 
 from __future__ import annotations
 
@@ -39,6 +39,7 @@ def model_for_purpose(purpose: str) -> str:
 class AnthropicProvider:
     """Anthropic Claude provider with per-task model routing.
 
+    Uses streaming to avoid the SDK's 10-minute timeout on large max_tokens.
     Creative tasks (message composition, hypothesis generation) use Opus 4.6.
     Analytical tasks (schema classification, evaluation) use Sonnet 4.6.
     """
@@ -54,13 +55,16 @@ class AnthropicProvider:
         purpose: str = "general",
     ) -> str:
         model = model_for_purpose(purpose)
-        # Use the model's full output capacity — API requires max_tokens but
-        # there's no reason to artificially cap it
         actual_max = _MAX_TOKENS.get(model, 64000)
-        message = await self.client.messages.create(
+
+        # Use streaming to avoid SDK timeout error on large max_tokens.
+        # The model generates as many tokens as it needs and stops naturally.
+        async with self.client.messages.stream(
             model=model,
             max_tokens=actual_max,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-        )
+        ) as stream:
+            message = await stream.get_final_message()
+
         return message.content[0].text  # type: ignore[union-attr]
