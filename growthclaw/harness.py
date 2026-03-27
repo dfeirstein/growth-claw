@@ -336,7 +336,7 @@ class Harness:
             "claude",
             "--resume",
             self.session_id,
-            "--auto-mode",
+            "--permission-mode", "auto",
             "-p",
             prompt,
         ]
@@ -367,7 +367,7 @@ class Harness:
 
         cmd = [
             "claude",
-            "--auto-mode",
+            "--permission-mode", "auto",
             "-p",
             (
                 "You are the GrowthClaw AI marketing agent. Read your workspace files "
