@@ -116,6 +116,18 @@ h2 { font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
   #nav, #slide-counter { display: none; } .slide-bg-glow { display: none; }
   body { background: #fff; color: #111; } .cover-title { -webkit-text-fill-color: #111; }
 }
+
+.faq-accordion { max-width: 780px; margin: 40px auto 0; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
+.faq-item:last-child { border-bottom: none; }
+.faq-question { width: 100%; background: none; border: none; padding: 22px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; cursor: pointer; text-align: left; font-family: var(--font-body); font-size: clamp(14px, 1.5vw, 16px); font-weight: 500; color: var(--text); line-height: 1.5; transition: color 0.25s; }
+.faq-question:hover { color: var(--accent); }
+.faq-icon { flex-shrink: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 300; color: var(--accent); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-answer-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.faq-item.open .faq-answer-wrap { grid-template-rows: 1fr; }
+.faq-answer { overflow: hidden; }
+.faq-answer p { padding: 0 0 22px; font-size: clamp(13px, 1.3vw, 15px); line-height: 1.7; color: var(--text-muted); max-width: 680px; }
 </style>
 </head>
 <body>
@@ -406,6 +418,56 @@ h2 { font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
   </div>
 </section>
 
+<section class="slide" id="slide-13">
+  <div class="slide-inner">
+    <div class="slide-label">Appendix A</div>
+    <h1 style="font-size: clamp(28px, 4vw, 48px); margin-bottom: 8px;">The questions I know you're going to ask.</h1>
+    <p class="sub-text" style="margin-bottom: 0;">We know. Here are the answers.</p>
+    <div class="faq-accordion">
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;Why can&rsquo;t Klaviyo/Braze just add AI?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>They can add AI copilots to their workflow builders. That&rsquo;s a faster human. AutoGrow eliminates the human. You can&rsquo;t retrofit autonomy onto software designed around manual orchestration&mdash;same reason Blockbuster couldn&rsquo;t become Netflix by adding a website.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;What&rsquo;s your moat if the code is open source?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>The code is the distribution engine. The moat is the Cloud Intelligence layer&mdash;anonymized experiment outcomes across every customer. That corpus is proprietary, compounding, and impossible to replicate without the installed base. Open source gets us there faster.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;Zero employees&mdash;how do you support customers?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>The product debugs itself. It reads its own outcomes nightly and recompiles. At scale, a small CS team may make sense&mdash;but the ratio is 1:500, not 1:50.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;You&rsquo;re pre-revenue. Why should I believe the $47K number?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>It&rsquo;s not projected. We ran AutoGrow against a live production database&mdash;66 tables, 77K users, $200K/month revenue. The 81.7% drop-off and $47K/mo leakage were diagnosed autonomously. Anyone can verify those funnel metrics.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;What happens when the LLM makes a bad decision at 3am?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>Three layers. Confidence scoring holds low-conviction triggers for review. Nightly sweeps only promote variants that beat control on real outcomes. Send volume ramps gradually&mdash;10% &rarr; 25% &rarr; 50% &rarr; 100%. Aggressive about finding opportunities. Conservative about acting on them.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;Why not sell to Anthropic now?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>At one customer we&rsquo;re a prototype. At 100 with Cloud Intelligence live, we&rsquo;re a proprietary data asset that compounds. The acquisition math gets 10x better in 18 months.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;How do you acquire customers with zero budget?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>Open source (devs find us), Jeevz case study (real numbers write their own content), and Product Hunt/HN launch. At $3K/mo managed, we need 30 customers for $1M ARR. Not 3,000.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;What if the database is messy?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>That&rsquo;s the first compilation pass. The LLM maps whatever it finds to business concepts&mdash;no predefined schema required. Tested on 66 tables. Messy data is the norm, and it&rsquo;s exactly what makes this hard without the compiler approach.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;$8M for a one-person company?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>18 months to 100 managed customers. $8M covers LLM compute, infrastructure, Cloud Intelligence buildout, and one hire if needed. At 100 customers: $3.6M ARR, 89% margins. Series A from data, not promises.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question"><span>&ldquo;What&rsquo;s your biggest risk?&rdquo;</span><span class="faq-icon">+</span></button>
+        <div class="faq-answer-wrap"><div class="faq-answer"><p>Trust. AutoGrow diagnoses beautifully. The risk is the last mile&mdash;getting customers to let it send autonomously. That&rsquo;s why the Jeevz pilot with hard numbers matters. Once one case study exists, every customer after that is easier.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
 (function() {
   const slides = document.querySelectorAll('.slide');
@@ -447,6 +509,14 @@ h2 { font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
     loopArrows.forEach((a, i) => { a.style.color = i === arrowIdx ? 'var(--accent)' : 'var(--text-muted)'; a.style.transition = 'color 0.3s'; });
     arrowIdx = (arrowIdx + 1) % loopArrows.length;
   }, 600);
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
   dots[0]?.classList.add('active');
   counter.textContent = `1 / ${total}`;
 })();
