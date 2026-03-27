@@ -58,6 +58,7 @@ class Harness:
         self.concepts = None
         self.session_id: str | None = None
         self.listener = None
+        self.dag: object | None = None
         self._running = False
 
     async def _ensure_pools(self) -> None:
@@ -70,6 +71,11 @@ class Harness:
             self.internal_pool = await asyncpg.create_pool(
                 dsn=self.settings.growthclaw_database_url, min_size=2, max_size=10
             )
+        if not self.dag:
+            from growthclaw.memory.dag import GrowthDAG
+
+            self.dag = GrowthDAG()
+            await self.dag.initialize()
 
     async def start(self) -> None:
         """Start the harness: Python fast loop + Claude Code cron."""
@@ -286,6 +292,26 @@ class Harness:
                     ar_arm,
                 )
 
+            # Store in Growth DAG (Layer 0 — raw send event)
+            if self.dag:
+                try:
+                    from growthclaw.memory.dag_models import SendOutcome
+
+                    await self.dag.store_event(
+                        SendOutcome(
+                            trigger_id=trigger.id,
+                            trigger_name=trigger.name,
+                            user_id=event.user_id,
+                            channel=trigger.channel,
+                            message_body="",  # Composed later by Claude Code
+                            send_delay_minutes=trigger.delay_minutes,
+                            outcome=None,
+                            experiment_arm=ar_arm,
+                        )
+                    )
+                except Exception as dag_err:
+                    logger.warning("DAG store_event failed: %s", dag_err)
+
             # Record the trigger fire (frequency send recorded later at actual send time
             # by gc_send_message MCP tool — recording here would double-count)
             async with self.internal_pool.acquire() as iconn:
@@ -415,7 +441,7 @@ class Harness:
 
             async with self.customer_pool.acquire() as cconn:
                 async with self.internal_pool.acquire() as iconn:
-                    resolved = await outcome_checker.check_outcomes(cconn, iconn)
+                    resolved = await outcome_checker.check_outcomes(cconn, iconn, dag=self.dag)
             if resolved > 0:
                 logger.info("Resolved %d outcomes", resolved)
         except Exception as e:
