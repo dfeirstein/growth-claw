@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoGrow — The Growth Compiler | Seed Round 2026</title>
+<meta property="og:title" content="AutoGrow — Seed Round 2026">
+<meta property="og:description" content="The growth compiler. Your database is the source code.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='4' width='4' height='24' rx='1' fill='%2300ff88'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0a; --bg-elevated: #111111; --bg-card: #161616;
+  --text: #f5f5f5; --text-secondary: #a0a0a0; --text-muted: #666666;
+  --accent: #00ff88; --accent-dim: rgba(0,255,136,0.15); --accent-glow: rgba(0,255,136,0.3);
+  --font-body: 'Inter', -apple-system, sans-serif; --font-mono: 'JetBrains Mono', monospace;
+}
+html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+.slide { min-height: 100vh; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; padding: 60px 40px; position: relative; overflow: hidden; }
+.slide-inner { max-width: 1100px; width: 100%; position: relative; z-index: 1; }
+#nav { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+.nav-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); border: none; cursor: pointer; transition: all 0.3s; padding: 0; }
+.nav-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); transform: scale(1.3); }
+#slide-counter { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); z-index: 100; letter-spacing: 2px; }
+h1 { font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+h2 { font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+.slide-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; opacity: 0.8; }
+.accent { color: var(--accent); }
+.big-stat { font-family: var(--font-mono); font-size: clamp(48px, 8vw, 96px); font-weight: 800; color: var(--accent); line-height: 1; text-shadow: 0 0 40px var(--accent-glow); }
+.emphasis-line { font-size: clamp(18px, 2.5vw, 24px); color: var(--text); font-weight: 600; margin-top: 24px; }
+.sub-text { color: var(--text-secondary); font-size: clamp(14px, 1.5vw, 17px); line-height: 1.7; max-width: 700px; }
+.italic-closer { font-style: italic; color: var(--text-secondary); margin-top: 28px; font-size: 16px; line-height: 1.6; }
+.bold-closer { font-weight: 700; color: var(--text); margin-top: 20px; font-size: 17px; line-height: 1.6; }
+.terminal { background: #0c0c0c; border: 1px solid #222; border-radius: 8px; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.07), 0 20px 60px rgba(0,0,0,0.5); margin: 28px 0; max-width: 720px; }
+.terminal-bar { background: #1a1a1a; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #222; }
+.terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+.terminal-dot.r { background: #ff5f57; } .terminal-dot.y { background: #febc2e; } .terminal-dot.g { background: #28c840; }
+.terminal-title { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-left: 8px; }
+.terminal-body { padding: 20px 24px; font-family: var(--font-mono); font-size: clamp(12px, 1.3vw, 14px); line-height: 1.75; color: #ccc; overflow-x: auto; }
+.terminal-body .cmd { color: var(--accent); font-weight: 600; }
+.terminal-body .warn { color: #ff6b6b; }
+.terminal-body .info { color: #60a5fa; }
+.terminal-body .dim { color: #666; }
+.terminal-body .highlight { color: var(--accent); font-weight: 600; }
+.deck-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 15px; }
+.deck-table th { text-align: left; padding: 12px 16px; font-weight: 600; color: var(--text-secondary); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #222; }
+.deck-table td { padding: 14px 16px; border-bottom: 1px solid #1a1a1a; color: var(--text-secondary); }
+.deck-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.deck-table .row-highlight td { color: var(--accent); font-weight: 600; background: var(--accent-dim) !important; border-bottom-color: rgba(0,255,136,0.15); }
+.deck-table td strong { color: var(--text); font-weight: 600; }
+.pipeline { display: flex; flex-direction: column; gap: 0; margin: 32px 0; max-width: 640px; }
+.pipeline-step { display: flex; align-items: center; gap: 20px; position: relative; padding: 16px 0; }
+.pipeline-step::before { content: ''; position: absolute; left: 23px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), rgba(0,255,136,0.2)); }
+.pipeline-step:first-child::before { top: 50%; } .pipeline-step:last-child::before { bottom: 50%; }
+.pipeline-node { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--accent); background: var(--bg); flex-shrink: 0; z-index: 1; box-shadow: 0 0 16px var(--accent-glow); }
+.pipeline-content { flex: 1; }
+.pipeline-name { font-family: var(--font-mono); font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 3px; letter-spacing: 1px; }
+.pipeline-desc { font-size: 14px; color: var(--text-secondary); }
+.loop-diagram { display: flex; align-items: center; justify-content: center; gap: 0; margin: 32px 0; flex-wrap: wrap; }
+.loop-step { font-family: var(--font-mono); font-size: 13px; color: var(--accent); padding: 10px 16px; border: 1px solid rgba(0,255,136,0.25); border-radius: 6px; background: rgba(0,255,136,0.05); white-space: nowrap; }
+.loop-arrow { color: var(--text-muted); font-size: 18px; padding: 0 4px; }
+@keyframes loopPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.loop-label { font-family: var(--font-mono); font-size: 12px; color: var(--accent); text-align: center; margin-top: 12px; animation: loopPulse 3s ease-in-out infinite; letter-spacing: 2px; }
+.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 28px 0; }
+.tier { border: 1px solid #222; border-radius: 8px; padding: 28px 24px; background: var(--bg-card); transition: border-color 0.3s; }
+.tier:hover { border-color: #333; }
+.tier.featured { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+.tier-name { font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+.tier-price { font-family: var(--font-mono); font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.tier.featured .tier-price { color: var(--accent); }
+.tier-margin { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+.tier-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+.receipt { background: var(--bg-card); border: 1px solid #222; border-radius: 8px; padding: 28px 32px; font-family: var(--font-mono); font-size: clamp(13px, 1.4vw, 15px); line-height: 2; max-width: 440px; margin: 24px 0; }
+.receipt .line { display: flex; justify-content: space-between; color: var(--text-secondary); }
+.receipt .line-value { color: var(--text); font-weight: 600; }
+.receipt .divider { border: none; border-top: 1px dashed #333; margin: 8px 0; }
+.receipt .total .line-value { color: var(--accent); font-weight: 800; }
+.big-numbers { display: flex; gap: 48px; margin: 32px 0; flex-wrap: wrap; }
+.big-number-item { text-align: center; }
+.big-number-value { font-family: var(--font-mono); font-size: clamp(40px, 6vw, 72px); font-weight: 800; color: var(--accent); line-height: 1; text-shadow: 0 0 30px var(--accent-glow); }
+.big-number-label { font-size: 14px; color: var(--text-secondary); margin-top: 10px; letter-spacing: 1px; }
+.milestones { display: flex; flex-direction: column; gap: 16px; margin: 28px 0; max-width: 700px; }
+.milestone { display: flex; gap: 20px; align-items: baseline; }
+.milestone-phase { font-family: var(--font-mono); font-size: 13px; color: var(--accent); white-space: nowrap; min-width: 100px; font-weight: 600; }
+.milestone-text { font-size: 15px; color: var(--text-secondary); line-height: 1.5; }
+.cover-title { font-size: clamp(56px, 10vw, 120px); font-weight: 900; letter-spacing: -0.04em; line-height: 1; background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.cover-tagline { font-size: clamp(20px, 3vw, 32px); font-weight: 300; color: var(--text-secondary); margin-top: 16px; }
+.cover-sub { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); margin-top: 8px; letter-spacing: 1px; }
+.cover-url { font-family: var(--font-mono); font-size: 15px; color: var(--accent); margin-top: 40px; letter-spacing: 2px; }
+.closing-vision h1 { font-size: clamp(24px, 3.5vw, 40px); line-height: 1.4; font-weight: 700; color: var(--text-secondary); }
+.closing-vision h1 .accent { color: var(--accent); }
+.closing-final { font-size: clamp(16px, 2vw, 20px); color: var(--text); font-weight: 600; margin-top: 40px; }
+.slide-bg-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%); opacity: 0.07; pointer-events: none; z-index: 0; }
+@media (max-width: 768px) {
+  .slide { padding: 40px 20px; } #nav { right: 12px; gap: 8px; } .nav-dot { width: 8px; height: 8px; }
+  .tiers { grid-template-columns: 1fr; } .big-numbers { gap: 24px; }
+  .pipeline-step { gap: 14px; } .pipeline-node { width: 38px; height: 38px; font-size: 12px; } .pipeline-step::before { left: 18px; }
+  .deck-table { font-size: 13px; } .deck-table th, .deck-table td { padding: 10px 10px; }
+  .loop-diagram { gap: 4px; } .loop-step { padding: 6px 10px; font-size: 11px; } .receipt { padding: 20px 20px; }
+}
+@media print {
+  html { scroll-snap-type: none; } .slide { min-height: auto; page-break-after: always; padding: 40px; }
+  #nav, #slide-counter { display: none; } .slide-bg-glow { display: none; }
+  body { background: #fff; color: #111; } .cover-title { -webkit-text-fill-color: #111; }
+}
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<div id="slide-counter"></div>
+
+<section class="slide" id="slide-1">
+  <div class="slide-bg-glow" style="top: -200px; right: -200px;"></div>
+  <div class="slide-inner" style="text-align: center;">
+    <div class="cover-title">AutoGrow</div>
+    <div class="cover-tagline">The growth compiler.</div>
+    <div class="cover-sub">Your database is the source code.</div>
+    <div class="cover-url">autogrow.bot</div>
+  </div>
+</section>
+
+<section class="slide" id="slide-2">
+  <div class="slide-bg-glow" style="bottom: -200px; left: -200px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">The Problem</div>
+    <h1 style="font-size: clamp(24px, 3.5vw, 40px); max-width: 800px; line-height: 1.3;">For every $1 on marketing software,</h1>
+    <div class="big-stat" style="margin: 16px 0;">$6</div>
+    <h1 style="font-size: clamp(24px, 3.5vw, 40px); max-width: 800px; line-height: 1.3;">goes to humans who operate it.</h1>
+    <ul style="list-style: none; margin-top: 36px; display: flex; flex-direction: column; gap: 14px;">
+      <li class="sub-text">$200B/year on marketing automation + the teams required to run it</li>
+      <li class="sub-text"><span class="accent" style="font-weight:700;">81%</span> average user drop-off before conversion — every vertical, every tool</li>
+      <li class="sub-text">The software automates sends. Strategy, segmentation, and optimization remain <strong style="color:var(--text);">manual</strong>.</li>
+    </ul>
+    <div class="emphasis-line" style="margin-top: 40px;"><span class="accent">AutoGrow captures the $6.</span></div>
+  </div>
+</section>
+
+<section class="slide" id="slide-3">
+  <div class="slide-bg-glow" style="top: -100px; left: 50%; transform: translateX(-50%);"></div>
+  <div class="slide-inner">
+    <div class="slide-label">The Demo</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">We pointed it at a live business. Under 5 minutes.</h2>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot r"></span><span class="terminal-dot y"></span><span class="terminal-dot g"></span>
+        <span class="terminal-title">autogrow — zsh — 80x24</span>
+      </div>
+      <div class="terminal-body"><span class="cmd">$ autogrow onboard</span>
+
+<span class="info">&#x1f4ca;</span> Found <span class="highlight">66 tables</span>, <span class="highlight">12 domains</span>
+<span class="info">&#x1f9e0;</span> Funnel: signup &rarr; profile &rarr; first_booking &rarr; repeat &rarr; referral
+
+<span class="warn">&#x26a0;&#xfe0f;  81.7% never complete first booking &rarr; $47K/mo lost</span>
+
+<span class="highlight">&#x1f4a1; 5 triggers proposed:</span>
+   SMS   T+2h    <span class="dim">"You're 1 step away"</span>
+   Email T+24h   <span class="dim">"Your driver is ready" (by city)</span>
+   SMS   T+72h   <span class="dim">"First ride on us"</span>
+   Email on referral event
+   SMS   T+14d   <span class="dim">"We miss you"</span>
+
+<span class="dim">&#x23f1;&#xfe0f;  4:38. Zero config. Ready to activate.</span></div>
+    </div>
+    <div style="display:flex; gap:32px; flex-wrap:wrap; margin-top:20px;">
+      <span class="sub-text"><strong style="color:var(--text)">No templates.</strong></span>
+      <span class="sub-text"><strong style="color:var(--text)">No workflow builder.</strong></span>
+      <span class="sub-text"><strong style="color:var(--text)">No consultant.</strong></span>
+    </div>
+    <p class="sub-text" style="margin-top: 16px;">This ran on <strong style="color:var(--text);">Jeevz</strong> — $200K/month, 77,000 users. Every number is real.</p>
+    <p class="italic-closer">If it finds $47K/month a growth team missed, what's it worth to every business with a database?</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-4">
+  <div class="slide-bg-glow" style="top: 50%; right: -200px; transform: translateY(-50%);"></div>
+  <div class="slide-inner">
+    <div class="slide-label">How It Works</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">Six compilation passes. Recursive. Self-improving.</h2>
+    <div class="pipeline">
+      <div class="pipeline-step"><div class="pipeline-node">1</div><div class="pipeline-content"><div class="pipeline-name">PARSE</div><div class="pipeline-desc">Read database schema and sample data</div></div></div>
+      <div class="pipeline-step"><div class="pipeline-node">2</div><div class="pipeline-content"><div class="pipeline-name">UNDERSTAND</div><div class="pipeline-desc">Map tables to business concepts via LLM</div></div></div>
+      <div class="pipeline-step"><div class="pipeline-node">3</div><div class="pipeline-content"><div class="pipeline-name">MODEL</div><div class="pipeline-desc">Identify funnels, segments, drop-off points</div></div></div>
+      <div class="pipeline-step"><div class="pipeline-node">4</div><div class="pipeline-content"><div class="pipeline-name">COMPILE</div><div class="pipeline-desc">Generate personalized triggers and messages</div></div></div>
+      <div class="pipeline-step"><div class="pipeline-node">5</div><div class="pipeline-content"><div class="pipeline-name">OPTIMIZE</div><div class="pipeline-desc">Test on real outcomes — recompile nightly</div></div></div>
+      <div class="pipeline-step"><div class="pipeline-node">6</div><div class="pipeline-content"><div class="pipeline-name">SELF-HOST</div><div class="pipeline-desc">Rewrite its own passes based on what worked</div></div></div>
+    </div>
+    <div style="display:flex; gap: 40px; margin: 24px 0; flex-wrap: wrap;">
+      <span class="sub-text"><strong style="color:var(--text)">Day 1:</strong> interpreted.</span>
+      <span class="sub-text"><strong style="color:var(--text)">Day 30:</strong> JIT-compiled.</span>
+      <span class="sub-text"><strong style="color:var(--text)">Day 100:</strong> diverged from anything a human would build.</span>
+    </div>
+    <p class="bold-closer" style="max-width:760px; font-size:15px;">Competitors ship one-pass tools — prompt in, output out. AutoGrow runs recursive multi-pass compilation with profile-guided optimization on real outcomes. That's a <span class="accent">structural difference</span>, not a feature difference.</p>
+    <p class="italic-closer">The gap between AutoGrow and a human growth team widens every night it runs.</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-5">
+  <div class="slide-bg-glow" style="bottom: -200px; right: -100px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Compounding</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">Every night it gets better. On autopilot.</h2>
+    <table class="deck-table" style="max-width: 700px;">
+      <thead><tr><th></th><th>Day 1</th><th>Day 30</th><th>Day 100</th><th>Day 365</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Experiments</strong></td><td>5</td><td>~50</td><td>~150</td><td style="color:var(--accent); font-weight:700;">~600</td></tr>
+        <tr><td><strong>Winning variants</strong></td><td>0</td><td>~12</td><td>~40</td><td style="color:var(--accent); font-weight:700;">~150</td></tr>
+        <tr><td><strong>Activation lift</strong></td><td>baseline</td><td>+5–10%</td><td>+15–25%</td><td style="color:var(--accent); font-weight:700;">+25–40%</td></tr>
+        <tr><td><strong>Churn reduction</strong></td><td>baseline</td><td>-3–8%</td><td>-10–18%</td><td style="color:var(--accent); font-weight:700;">-20–35%</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px; color: var(--text-muted); margin-bottom: 28px; font-style: italic;">Projected from Jeevz pilot + industry benchmarks. Updated with production actuals quarterly.</p>
+    <div class="loop-diagram">
+      <div class="loop-step">Observe</div><span class="loop-arrow">&rarr;</span>
+      <div class="loop-step">Hypothesize</div><span class="loop-arrow">&rarr;</span>
+      <div class="loop-step">Test</div><span class="loop-arrow">&rarr;</span>
+      <div class="loop-step">Measure</div><span class="loop-arrow">&rarr;</span>
+      <div class="loop-step">Learn</div><span class="loop-arrow">&rarr;</span>
+      <div class="loop-step">Recompose</div>
+    </div>
+    <div class="loop-label">&#x21bb; every night</div>
+    <p class="bold-closer" style="max-width:760px; font-size: 15px;"><span class="accent">Profile-Guided Optimization for marketing.</span> Compilers measure which code paths are hot and specialize. AutoGrow measures which messages convert and specializes.</p>
+    <p class="italic-closer">Now imagine this across a thousand businesses at once.</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-6">
+  <div class="slide-bg-glow" style="top: -200px; left: -100px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Network Effect</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">Customer 500 inherits the intelligence of 1–499.</h2>
+    <p class="sub-text" style="margin-bottom: 28px;">Every instance runs experiments. Anonymized outcomes feed a shared intelligence layer.</p>
+    <table class="deck-table" style="max-width: 600px;">
+      <thead><tr><th>Customers</th><th>Own experiments</th><th>From network</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>5</td><td>0</td><td>5</td></tr>
+        <tr><td>100</td><td>5,000</td><td>45,000</td><td>50,000</td></tr>
+        <tr class="row-highlight"><td>1,000</td><td>50,000</td><td>4,950,000</td><td>5,000,000</td></tr>
+      </tbody>
+    </table>
+    <p class="emphasis-line" style="margin-top: 28px;">Day 1 for customer 1,000: <span class="accent">five million experiments</span> they never ran.</p>
+    <p class="bold-closer">The code is open source. The intelligence is not.</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-7">
+  <div class="slide-bg-glow" style="bottom: -100px; right: -200px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Market</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 28px;">Everyone sells tools. We replace the team.</h2>
+    <table class="deck-table" style="max-width: 700px;">
+      <thead><tr><th></th><th>Software</th><th>+ Labor</th><th>Total Cost</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Customer.io</strong></td><td>$17K/yr</td><td>+ $150K</td><td><strong>$167K</strong></td></tr>
+        <tr><td><strong>Klaviyo</strong></td><td>$80K/yr</td><td>+ $300K</td><td><strong>$380K</strong></td></tr>
+        <tr><td><strong>Braze</strong></td><td>$250K/yr</td><td>+ $500K</td><td><strong>$750K</strong></td></tr>
+        <tr class="row-highlight"><td><strong>AutoGrow</strong></td><td>$36K/yr</td><td>+ $0</td><td><strong>$36K</strong></td></tr>
+      </tbody>
+    </table>
+    <div style="display: flex; gap: 40px; margin-top: 32px; flex-wrap: wrap;">
+      <div>
+        <div style="font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary);">Marketing automation TAM</div>
+        <div style="font-family: var(--font-mono); font-size: 24px; font-weight: 800; color: var(--text);">$6.4B &rarr; $13.7B <span style="font-size:14px; color: var(--text-muted);">by 2030</span></div>
+      </div>
+      <div>
+        <div style="font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary);">Growth team labor</div>
+        <div style="font-family: var(--font-mono); font-size: 24px; font-weight: 800; color: var(--accent);">$180B+ <span style="font-size:14px; color: var(--text-muted);">globally</span></div>
+      </div>
+    </div>
+    <p class="bold-closer">Software is 2% of the spend. Humans are 98%. <span class="accent">We eat the 98%.</span></p>
+  </div>
+</section>
+
+<section class="slide" id="slide-8">
+  <div class="slide-bg-glow" style="top: -200px; right: -200px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Business Model</div>
+    <h2 style="font-size: clamp(20px, 2.8vw, 30px); max-width: 800px; margin-bottom: 28px;">Open source for distribution. Managed for revenue. Cloud for the moat.</h2>
+    <div class="tiers">
+      <div class="tier"><div class="tier-name">Open Source</div><div class="tier-price">Free</div><div class="tier-margin">MIT License</div><div class="tier-desc">Developers find us. Not the other way around.</div></div>
+      <div class="tier featured"><div class="tier-name">Managed</div><div class="tier-price">$3K/mo</div><div class="tier-margin">89% margin</div><div class="tier-desc">We run AutoGrow for you.</div></div>
+      <div class="tier"><div class="tier-name">Cloud Intelligence</div><div class="tier-price">$99–499/mo</div><div class="tier-margin">95%+ margin</div><div class="tier-desc">Shared experiment network. Smarter at scale.</div></div>
+    </div>
+    <p class="bold-closer" style="font-size: 15px;">Zero employees. Software margins. Labor-budget pricing.</p>
+    <p class="sub-text" style="margin-top: 12px; font-family: var(--font-mono); font-size: 13px;">OSS &rarr; inbound &rarr; managed revenue &rarr; cloud moat &rarr; pricing power &rarr; repeat</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-9">
+  <div class="slide-bg-glow" style="bottom: -200px; left: -200px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Unit Economics</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;"><span class="accent">89%</span> margins. Zero headcount.</h2>
+    <div style="display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start;">
+      <div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 1px;">PER MANAGED CUSTOMER</p>
+        <div class="receipt">
+          <div class="line"><span>Revenue</span><span class="line-value">$3,000/mo</span></div>
+          <div class="line"><span>LLM cost</span><span class="line-value">~$300/mo</span></div>
+          <div class="line"><span>Infrastructure</span><span class="line-value">~$50/mo</span></div>
+          <hr class="divider">
+          <div class="line total"><span>Gross profit</span><span class="line-value">$2,650/mo (89%)</span></div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 1px;">AT 100 CUSTOMERS</p>
+        <div class="receipt">
+          <div class="line"><span>ARR</span><span class="line-value">$3.6M</span></div>
+          <div class="line"><span>Gross profit</span><span class="line-value">$3.2M</span></div>
+          <hr class="divider">
+          <div class="line total"><span>Headcount</span><span class="line-value">0</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="sub-text" style="margin-top: 20px; font-style: italic;">Customer pays Twilio/Resend directly. We never touch send infrastructure.</p>
+    <p class="emphasis-line" style="max-width: 600px;">AutoGrow at 100 customers: $3.6M ARR. <span class="accent">The denominator is zero.</span></p>
+  </div>
+</section>
+
+<section class="slide" id="slide-10">
+  <div class="slide-bg-glow" style="top: -100px; right: -200px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Traction</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">Running in production. Not a prototype.</h2>
+    <p class="sub-text" style="margin-bottom: 24px;"><strong style="color:var(--text);">Jeevz</strong> — on-demand chauffeur service. $200K/mo revenue. 77,000 users.</p>
+    <table class="deck-table" style="max-width: 650px;">
+      <thead><tr><th>Claim</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Zero-config onboard</strong></td><td>66-table prod database, 4 minutes</td></tr>
+        <tr><td><strong>Autonomous diagnosis</strong></td><td>81.7% drop-off found — no human input</td></tr>
+        <tr><td><strong>Revenue impact</strong></td><td>$47K/mo recoverable leakage identified</td></tr>
+        <tr><td><strong>Actionable output</strong></td><td>5 personalized trigger sequences proposed</td></tr>
+        <tr class="row-highlight"><td><strong>Status</strong></td><td>Live in production</td></tr>
+      </tbody>
+    </table>
+    <p class="sub-text" style="margin-top: 24px;">Full AutoResearch loop, semantic memory, and hierarchical DAG intelligence — shipped and tested (137 tests).</p>
+    <p class="bold-closer">MIT license. Open source. Anthropic Partner Network applicant.</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-11">
+  <div class="slide-bg-glow" style="bottom: -200px; left: -100px;"></div>
+  <div class="slide-inner">
+    <div class="slide-label">Founder</div>
+    <h2 style="font-size: clamp(22px, 3vw, 34px); max-width: 700px; margin-bottom: 8px;">Four waves. Same thesis. Bigger each time.</h2>
+    <p class="sub-text" style="margin-bottom: 24px;"><strong style="color:var(--text);">Douglas Feirstein</strong> — Serial entrepreneur. 3 exits.</p>
+    <table class="deck-table" style="max-width: 750px;">
+      <thead><tr><th>Wave</th><th>Company</th><th>Replaced</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>Internet</td><td><strong>LiveOps</strong></td><td>Call centers &rarr; virtual agents</td><td>Industry pioneer, 8-figure exit</td></tr>
+        <tr><td>Web</td><td><strong>Hired.com</strong></td><td>Recruiters &rarr; algorithms</td><td>Profitable year 1, acquired</td></tr>
+        <tr><td>Mobile</td><td><strong>Jeevz</strong></td><td>Dispatchers &rarr; app</td><td>$200K+/mo, operating</td></tr>
+        <tr class="row-highlight"><td>AI</td><td><strong>AutoGrow</strong></td><td>Growth teams &rarr; compiler</td><td>Building now</td></tr>
+      </tbody>
+    </table>
+    <p class="bold-closer" style="margin-top: 28px;">Technology eliminates labor and delivers better outcomes. <span class="accent">Every time.</span></p>
+    <p class="sub-text" style="margin-top: 12px;">$180B in growth team labor. The largest target yet.</p>
+  </div>
+</section>
+
+<section class="slide" id="slide-12">
+  <div class="slide-bg-glow" style="top: -200px; left: 50%; transform: translateX(-50%);"></div>
+  <div class="slide-inner" style="text-align: center;">
+    <div class="slide-label" style="text-align: center;">The Ask</div>
+    <div class="big-numbers" style="justify-content: center;">
+      <div class="big-number-item"><div class="big-number-value">$8M</div><div class="big-number-label">seed round</div></div>
+      <div class="big-number-item"><div class="big-number-value">18mo</div><div class="big-number-label">runway</div></div>
+      <div class="big-number-item"><div class="big-number-value">0</div><div class="big-number-label">hires</div></div>
+    </div>
+    <div class="milestones" style="margin: 40px auto; text-align: left;">
+      <div class="milestone"><span class="milestone-phase">Month 1–6</span><span class="milestone-text">Jeevz case study with published lift numbers. First 10 managed customers.</span></div>
+      <div class="milestone"><span class="milestone-phase">Month 7–12</span><span class="milestone-text">Cloud intelligence live. 100+ customers. Network effect compounding.</span></div>
+      <div class="milestone"><span class="milestone-phase">Month 13–18</span><span class="milestone-text">$50K+ MRR. Series A from data, not promises.</span></div>
+    </div>
+    <div class="closing-vision" style="margin-top: 56px;">
+      <h1>Nobody writes assembly anymore.</h1>
+      <h1>Soon, nobody writes <span class="accent">marketing flows.</span></h1>
+    </div>
+    <p class="closing-final">Every business with a database deserves a growth compiler.</p>
+    <div class="cover-url" style="margin-top: 40px;">autogrow.bot</div>
+  </div>
+</section>
+
+<script>
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var nav = document.getElementById('nav');
+  var counter = document.getElementById('slide-counter');
+  var total = slides.length;
+  slides.forEach(function(_, i) {
+    var dot = document.createElement('button');
+    dot.className = 'nav-dot';
+    dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+    dot.addEventListener('click', function() { slides[i].scrollIntoView({ behavior: 'smooth' }); });
+    nav.appendChild(dot);
+  });
+  var dots = nav.querySelectorAll('.nav-dot');
+  var currentSlide = 0;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+        var idx = Array.from(slides).indexOf(entry.target);
+        if (idx !== -1) {
+          currentSlide = idx;
+          dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+          counter.textContent = (idx + 1) + ' / ' + total;
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+  slides.forEach(function(s) { observer.observe(s); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); slides[Math.min(currentSlide + 1, total - 1)].scrollIntoView({ behavior: 'smooth' });
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); slides[Math.max(currentSlide - 1, 0)].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+  var loopArrows = document.querySelectorAll('.loop-arrow');
+  var arrowIdx = 0;
+  setInterval(function() {
+    loopArrows.forEach(function(a, i) { a.style.color = i === arrowIdx ? 'var(--accent)' : 'var(--text-muted)'; a.style.transition = 'color 0.3s'; });
+    arrowIdx = (arrowIdx + 1) % loopArrows.length;
+  }, 600);
+  dots[0] && dots[0].classList.add('active');
+  counter.textContent = '1 / ' + total;
+})();
+</script>
+</body>
+</html>
