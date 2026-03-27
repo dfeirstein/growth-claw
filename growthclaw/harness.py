@@ -361,21 +361,30 @@ class Harness:
             )
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
 
-            if proc.returncode == 0:
-                try:
-                    result = json.loads(stdout.decode())
-                    session_id = result.get("session_id")
-                    if session_id:
-                        logger.info("Claude Code session initialized: %s", session_id)
-                        return session_id
-                except json.JSONDecodeError:
-                    pass
-                # Try parsing session info from stderr as fallback
-                for line in stderr.decode().splitlines():
-                    if "session" in line.lower():
-                        logger.info("Claude session output: %s", line)
+            # Parse session_id from JSON output (may have trailing non-JSON lines)
+            stdout_text = stdout.decode().strip() if stdout else ""
+            stderr_text = stderr.decode().strip() if stderr else ""
 
-            logger.warning("Could not capture session ID from Claude Code")
+            if proc.returncode != 0:
+                logger.error("Claude Code init failed (rc=%d): %s", proc.returncode, stderr_text[:200])
+                return None
+
+            # Find the JSON line in stdout (skip non-JSON lines like "Shell cwd was reset")
+            for line in stdout_text.splitlines():
+                line = line.strip()
+                if line.startswith("{"):
+                    try:
+                        result = json.loads(line)
+                        session_id = result.get("session_id")
+                        if session_id:
+                            logger.info("Claude Code session initialized: %s", session_id)
+                            return session_id
+                    except json.JSONDecodeError:
+                        continue
+
+            logger.warning(
+                "Could not capture session ID from Claude Code. stdout=%s", stdout_text[:200]
+            )
             return None
         except TimeoutError:
             logger.error("Claude Code session init timed out (2 min)")
