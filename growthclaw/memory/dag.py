@@ -83,6 +83,48 @@ def _node_from_row(row: aiosqlite.Row) -> DAGNode:
     )
 
 
+MAX_SUMMARY_CHARS = 2000
+
+
+async def _ensure_convergence(
+    summary_text: str,
+    source_text_len: int,
+    llm_client: LLMClient,
+    purpose: str,
+) -> str:
+    """LCM convergence guard: ensure summary is shorter than source material.
+
+    Three-level escalation per LCM paper:
+    1. Normal — use the summary as-is if it's shorter
+    2. Aggressive — re-prompt for bullet points only
+    3. Deterministic — truncate to MAX_SUMMARY_CHARS
+    """
+    if len(summary_text) < source_text_len:
+        return summary_text
+
+    # Level 2: Aggressive re-prompt
+    logger.warning(
+        "Convergence violation: summary (%d) >= source (%d), re-prompting",
+        len(summary_text), source_text_len,
+    )
+    aggressive_prompt = (
+        f"This summary is too long ({len(summary_text)} chars). "
+        f"Condense into bullet points only, max {MAX_SUMMARY_CHARS} chars. "
+        f"Keep only key metrics and findings:\n\n{summary_text}"
+    )
+    try:
+        result = await llm_client.call_json(aggressive_prompt, purpose=f"{purpose}_convergence")
+        condensed = result.get("summary", summary_text)
+        if len(condensed) < source_text_len:
+            return condensed
+    except Exception:
+        pass
+
+    # Level 3: Deterministic truncation
+    logger.warning("Convergence still violated, deterministic truncation to %d chars", MAX_SUMMARY_CHARS)
+    return summary_text[:MAX_SUMMARY_CHARS]
+
+
 class GrowthDAG:
     """DAG-based hierarchical memory for growth intelligence.
 
@@ -100,6 +142,7 @@ class GrowthDAG:
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
+            await db.execute("PRAGMA journal_mode=WAL;")
             await db.execute(_CREATE_EVENTS_TABLE)
             await db.execute(_CREATE_NODES_TABLE)
             for idx_sql in _CREATE_INDEXES:
@@ -210,7 +253,10 @@ class GrowthDAG:
         )
         result = await llm_client.call_json(prompt, purpose="dag_compact_trigger")
 
-        summary_text = result.get("summary", "")
+        source_text_len = sum(len(json.dumps(e)) for e in events)
+        summary_text = await _ensure_convergence(
+            result.get("summary", ""), source_text_len, llm_client, "dag_compact_trigger"
+        )
         stats = result.get("stats", {})
         node_id = uuid4()
 
@@ -278,11 +324,20 @@ class GrowthDAG:
         summaries = [dict(r) for r in rows]
         source_ids = [s["id"] for s in summaries]
 
-        # Parse stats JSON for each summary and resolve trigger names
+        # Parse stats JSON and resolve trigger names from events table
+        trigger_name_cache: dict[str, str] = {}
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT DISTINCT trigger_id, trigger_name FROM dag_events"
+            )
+            for row in await cursor.fetchall():
+                trigger_name_cache[row["trigger_id"]] = row["trigger_name"]
+
         for s in summaries:
             s["stats"] = json.loads(s["stats"]) if isinstance(s["stats"], str) else s["stats"]
-            # Look up trigger name from events table if we have a trigger_id
-            s["trigger_name"] = s.get("trigger_id", "unknown")
+            tid = s.get("trigger_id", "")
+            s["trigger_name"] = trigger_name_cache.get(tid, tid or "unknown")
 
         prompt = render_template(
             "condense_patterns.j2",
@@ -291,7 +346,10 @@ class GrowthDAG:
         )
         result = await llm_client.call_json(prompt, purpose="dag_condense_patterns")
 
-        summary_text = result.get("summary", "")
+        source_text_len = sum(len(s.get("summary_text", "")) for s in summaries)
+        summary_text = await _ensure_convergence(
+            result.get("summary", ""), source_text_len, llm_client, "dag_condense_patterns"
+        )
         stats = result.get("stats", {})
         node_id = uuid4()
 
@@ -376,7 +434,10 @@ class GrowthDAG:
         )
         result = await llm_client.call_json(prompt, purpose="dag_synthesize_strategy")
 
-        summary_text = result.get("summary", "")
+        source_text_len = sum(len(p.get("summary_text", "")) for p in patterns)
+        summary_text = await _ensure_convergence(
+            result.get("summary", ""), source_text_len, llm_client, "dag_synthesize_strategy"
+        )
         stats = result.get("stats", {})
         node_id = uuid4()
 
