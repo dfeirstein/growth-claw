@@ -13,6 +13,9 @@ from growthclaw.models.trigger import TriggerEvent, TriggerRule
 
 logger = logging.getLogger("growthclaw.triggers.evaluator")
 
+# Track which triggers have already logged check_sql errors (avoid spam)
+_check_sql_errors_logged: set[str] = set()
+
 
 async def evaluate(
     event: TriggerEvent,
@@ -88,15 +91,22 @@ async def evaluate(
     # 5. Check if user still hasn't activated (the condition the trigger is watching for)
     if trigger.check_sql:
         try:
+            sql = trigger.check_sql.strip()
+            # LLM sometimes returns SQL fragments — wrap in SELECT if needed
+            if not sql.upper().startswith("SELECT"):
+                sql = f"SELECT ({sql})"
             still_needs_action = await customer_conn.fetchval(
-                trigger.check_sql,
+                sql,
                 user_id if not user_id.isdigit() else int(user_id),
             )
             if not still_needs_action:
                 logger.info("Blocked: user already activated (user_id=%s, trigger=%s)", user_id, trigger.name)
                 return False
         except Exception as e:
-            logger.warning("check_sql failed for trigger %s: %s", trigger.name, e)
+            # Log once per trigger, not per event
+            if trigger.name not in _check_sql_errors_logged:
+                _check_sql_errors_logged.add(trigger.name)
+                logger.warning("check_sql failed for trigger %s (will not repeat): %s", trigger.name, e)
             return False
 
     logger.info("Trigger approved: user_id=%s, trigger=%s", user_id, trigger.name)
