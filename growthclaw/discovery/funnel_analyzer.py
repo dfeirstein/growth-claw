@@ -40,7 +40,12 @@ async def _count_activated(conn: asyncpg.Connection, concepts: BusinessConcepts)
 
     filters = []
     if concepts.activation_soft_delete:
-        filters.append(concepts.activation_soft_delete)
+        col = concepts.activation_soft_delete
+        # If it's just a column name, wrap with IS NULL; if it's already a full expression, use as-is
+        if " " not in col:
+            filters.append(f'"{col}" IS NULL')
+        else:
+            filters.append(col)
 
     where = f" WHERE {' AND '.join(filters)}" if filters else ""
     query = f'SELECT COUNT(DISTINCT "{fk}") FROM "{table}"{where}'  # noqa: S608
