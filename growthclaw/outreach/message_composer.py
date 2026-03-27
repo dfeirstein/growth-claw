@@ -23,8 +23,18 @@ async def compose(
     llm_client: LLMClient,
     cta_link: str = "",
     business_name: str = "",
+    dag: object | None = None,
 ) -> str:
     """Generate a personalized message using LLM based on trigger context and customer profile."""
+    # Enrich with DAG context (recent performance patterns for this trigger)
+    dag_insights: list[str] = []
+    if dag:
+        try:
+            dag_nodes = await dag.get_composition_context(trigger.name, trigger.channel)
+            dag_insights = [n.summary_text for n in dag_nodes]
+        except Exception as e:
+            logger.warning("DAG context fetch failed: %s", e)
+
     prompt = render_template(
         "compose_message.j2",
         channel=trigger.channel,
@@ -36,6 +46,7 @@ async def compose(
         profile_data=profile_data,
         intelligence_brief=intelligence_brief.model_dump(mode="json"),
         cta_link=cta_link,
+        dag_insights=dag_insights,
     )
 
     message = await llm_client.call(prompt, temperature=0.7, max_tokens=500, purpose="compose_sms")

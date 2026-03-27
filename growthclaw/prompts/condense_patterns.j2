@@ -1,0 +1,25 @@
+Analyze these {{ summaries|length }} daily trigger summaries from week {{ week_start }}.
+
+{% for s in summaries %}
+### {{ s.trigger_name or s.trigger_id }} — {{ s.period }}
+{{ s.summary_text }}
+Stats: {{ s.stats }}
+
+{% endfor %}
+
+Identify CROSS-TRIGGER patterns. What works across multiple triggers? What's different?
+
+Produce a JSON summary:
+{
+  "summary": "Two paragraphs: what the business learned this week across ALL triggers",
+  "stats": {
+    "total_triggers_active": <int>,
+    "total_sends": <int>,
+    "total_conversions": <int>,
+    "overall_conversion_rate": <float>,
+    "cross_trigger_insights": ["<string>", ...],
+    "channel_comparison": {"sms": <rate>, "email": <rate>},
+    "timing_insights": ["<string>", ...],
+    "untested_opportunities": ["<string>", ...]
+  }
+}

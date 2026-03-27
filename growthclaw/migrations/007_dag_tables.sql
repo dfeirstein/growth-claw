@@ -1,0 +1,37 @@
+-- Migration 007: Growth DAG (SQLite-based)
+-- The Growth DAG stores hierarchical experiment memory in a local SQLite database
+-- at ~/.growthclaw/growth_dag.db. This migration is a no-op for Postgres but
+-- documents the DAG schema for reference.
+--
+-- See growthclaw/memory/dag.py for the SQLite schema.
+--
+-- SQLite schema (for reference only — managed by GrowthDAG.initialize()):
+--
+-- CREATE TABLE dag_events (
+--     id TEXT PRIMARY KEY,
+--     trigger_id TEXT NOT NULL,
+--     trigger_name TEXT NOT NULL,
+--     user_id TEXT NOT NULL,
+--     channel TEXT NOT NULL,
+--     message_body TEXT,
+--     tone TEXT,
+--     offer TEXT,
+--     send_delay_minutes INTEGER DEFAULT 0,
+--     outcome TEXT,
+--     time_to_convert_minutes REAL,
+--     experiment_arm TEXT,
+--     created_at TEXT NOT NULL,
+--     outcome_at TEXT
+-- );
+--
+-- CREATE TABLE dag_nodes (
+--     id TEXT PRIMARY KEY,
+--     depth INTEGER NOT NULL,
+--     trigger_id TEXT,
+--     period TEXT NOT NULL,
+--     summary_text TEXT NOT NULL,
+--     source_node_ids TEXT NOT NULL DEFAULT '[]',
+--     stats TEXT NOT NULL DEFAULT '{}',
+--     created_at TEXT NOT NULL
+-- );
+SELECT 1;

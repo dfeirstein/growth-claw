@@ -21,6 +21,8 @@ from growthclaw.discovery import (
 from growthclaw.experiments import experiment_manager, experiment_store, outcome_checker
 from growthclaw.intelligence import profile_analyzer, profile_builder, profile_store
 from growthclaw.llm.client import LLMClient, create_llm_client
+from growthclaw.memory.dag import GrowthDAG
+from growthclaw.memory.dag_models import SendOutcome as DAGSendOutcome
 from growthclaw.models.journey import Journey
 from growthclaw.models.schema_map import BusinessConcepts, Funnel
 from growthclaw.models.trigger import TriggerEvent, TriggerRule
@@ -51,6 +53,7 @@ class GrowthClaw:
         self.internal_pool: asyncpg.Pool | None = None  # type: ignore[type-arg]
         self.concepts: BusinessConcepts | None = None
         self.funnel: Funnel | None = None
+        self.dag: GrowthDAG | None = None
 
     async def _get_usage_conn(self) -> asyncpg.Connection:  # type: ignore[type-arg]
         """Get a connection for LLM usage tracking."""
@@ -68,6 +71,9 @@ class GrowthClaw:
             self.internal_pool = await asyncpg.create_pool(
                 dsn=self.settings.growthclaw_database_url, min_size=2, max_size=10
             )
+        if not self.dag:
+            self.dag = GrowthDAG()
+            await self.dag.initialize()
 
     async def close(self) -> None:
         """Close all resources."""
@@ -329,6 +335,7 @@ class GrowthClaw:
         from growthclaw.autoresearch.loop import AutoResearchLoop
 
         self.autoresearch_loop = AutoResearchLoop(self.llm_client, self.settings)
+        self.autoresearch_loop._dag = self.dag
         self.scheduler.add_job(self._run_autoresearch, "interval", hours=6, id="autoresearch_loop")
 
         self.scheduler.start()
@@ -568,6 +575,7 @@ class GrowthClaw:
                     self.llm_client,
                     cta_link=self.settings.cta_url,
                     business_name=self.settings.business_name,
+                    dag=self.dag,
                 )
                 message_body = message
 
@@ -600,6 +608,25 @@ class GrowthClaw:
                 if hasattr(experiment, "id") and hasattr(arm, "name"):
                     await experiment_store.record_send(iconn, experiment.id, arm.name)
 
+            # Store in Growth DAG (Layer 0 — raw send event)
+            if self.dag:
+                try:
+                    await self.dag.store_event(
+                        DAGSendOutcome(
+                            trigger_id=trigger.id,
+                            trigger_name=trigger.name,
+                            user_id=event.user_id,
+                            channel=trigger.channel,
+                            message_body=message_body,
+                            tone=brief.recommended_tone if brief else None,
+                            send_delay_minutes=trigger.delay_minutes,
+                            outcome=None,  # Updated later by outcome checker
+                            experiment_arm=ar_arm,
+                        )
+                    )
+                except Exception as dag_err:
+                    logger.warning("Failed to store DAG event: %s", dag_err)
+
             logger.info(
                 "Pipeline complete: user=%s trigger=%s channel=%s status=%s",
                 event.user_id,
@@ -617,7 +644,7 @@ class GrowthClaw:
         try:
             async with self.customer_pool.acquire() as cconn:
                 async with self.internal_pool.acquire() as iconn:
-                    resolved = await outcome_checker.check_outcomes(cconn, iconn)
+                    resolved = await outcome_checker.check_outcomes(cconn, iconn, dag=self.dag)
             if resolved > 0:
                 logger.info("Resolved %d outcomes", resolved)
         except Exception as e:

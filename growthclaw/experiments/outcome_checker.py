@@ -16,6 +16,7 @@ logger = logging.getLogger("growthclaw.experiments.outcome_checker")
 async def check_outcomes(
     customer_conn: asyncpg.Connection,  # type: ignore[type-arg]
     internal_conn: asyncpg.Connection,  # type: ignore[type-arg]
+    dag: object | None = None,
 ) -> int:
     """Check all pending journeys for conversion outcomes.
 
@@ -43,6 +44,15 @@ async def check_outcomes(
                     await journey_store.update_outcome(internal_conn, journey.id, "converted")
                     logger.info("Conversion detected: user=%s, journey=%s", journey.user_id, journey.id)
                     resolved += 1
+
+                    # Update DAG Layer 0 event outcome (match by user_id + trigger_id)
+                    if dag and hasattr(dag, "update_event_outcome_by_user"):
+                        try:
+                            await dag.update_event_outcome_by_user(
+                                journey.user_id, journey.trigger_id, "converted"
+                            )
+                        except Exception as dag_err:
+                            logger.warning("DAG outcome update failed: %s", dag_err)
 
                     # Update experiment results if applicable
                     if journey.experiment_id and journey.experiment_arm:

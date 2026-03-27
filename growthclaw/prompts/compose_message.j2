@@ -9,6 +9,13 @@ CUSTOMER PROFILE:
 INTELLIGENCE BRIEF:
 {{ intelligence_brief | tojson(indent=2) }}
 
+{% if dag_insights %}
+RECENT PERFORMANCE INSIGHTS (use these to inform tone and approach):
+{% for insight in dag_insights %}
+- {{ insight }}
+{% endfor %}
+{% endif %}
+
 RULES:
 {% if channel == 'sms' %}
 - Under 160 characters total (STRICT — count carefully)

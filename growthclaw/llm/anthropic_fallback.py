@@ -17,6 +17,9 @@ _OPUS_PURPOSES = frozenset({
     "hypothesis_generation",
     "variant_creation",
     "prompt_optimization",
+    "dag_compact_trigger",
+    "dag_condense_patterns",
+    "dag_synthesize_strategy",
 })
 
 
