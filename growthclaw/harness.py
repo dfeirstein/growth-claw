@@ -281,7 +281,7 @@ class Harness:
                     event_id,
                     trigger.channel,
                     contact.value,
-                    json.dumps(profile_data),
+                    json.dumps(profile_data, default=str),
                     ar_cycle_id,
                     ar_arm,
                 )
