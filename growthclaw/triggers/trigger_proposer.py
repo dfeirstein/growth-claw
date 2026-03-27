@@ -27,7 +27,7 @@ async def propose_triggers(
     )
 
     logger.info("Requesting trigger proposals from LLM")
-    result = await llm_client.call_json_list(prompt, temperature=0.3, max_tokens=16384, purpose="trigger_proposal")
+    result = await llm_client.call_json_list(prompt, temperature=0.3, purpose="trigger_proposal")
 
     triggers: list[TriggerRule] = []
     for item in result:

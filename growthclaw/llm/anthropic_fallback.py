@@ -44,7 +44,7 @@ class AnthropicProvider:
         self,
         prompt: str,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         purpose: str = "general",
     ) -> str:
         model = model_for_purpose(purpose)

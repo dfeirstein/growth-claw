@@ -25,7 +25,7 @@ class LLMProvider(Protocol):
     """Protocol for LLM providers."""
 
     async def call(
-        self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096, purpose: str = "general"
+        self, prompt: str, temperature: float = 0.1, max_tokens: int = 16384, purpose: str = "general"
     ) -> str: ...
 
 
@@ -67,7 +67,7 @@ class LLMClient:
         self,
         prompt: str,
         temperature: float = 0.1,
-        max_tokens: int = 4096,
+        max_tokens: int = 16384,
         purpose: str = "general",
     ) -> str:
         """Make an LLM call. Tries primary, falls back if it fails."""
@@ -165,7 +165,7 @@ class LLMClient:
         return provider
 
     async def call_json(
-        self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096, purpose: str = "general"
+        self, prompt: str, temperature: float = 0.1, max_tokens: int = 16384, purpose: str = "general"
     ) -> dict[str, Any]:
         """Make an LLM call and parse the response as JSON. Retries once on parse failure."""
         raw = await self.call(prompt, temperature=temperature, max_tokens=max_tokens, purpose=purpose)
@@ -182,7 +182,7 @@ class LLMClient:
         return json.loads(fixed_text)  # type: ignore[no-any-return]
 
     async def call_json_list(
-        self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096, purpose: str = "general"
+        self, prompt: str, temperature: float = 0.1, max_tokens: int = 16384, purpose: str = "general"
     ) -> list[Any]:
         """Make an LLM call and parse the response as a JSON array."""
         raw = await self.call(prompt, temperature=temperature, max_tokens=max_tokens, purpose=purpose)

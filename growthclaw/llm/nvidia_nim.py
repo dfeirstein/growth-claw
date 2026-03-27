@@ -23,7 +23,7 @@ class NvidiaNimProvider:
         self.url = f"{base_url.rstrip('/')}/chat/completions"
 
     async def call(
-        self, prompt: str, temperature: float = 0.1, max_tokens: int = 4096, purpose: str = "general"
+        self, prompt: str, temperature: float = 0.1, max_tokens: int = 16384, purpose: str = "general"
     ) -> str:
         async with httpx.AsyncClient(timeout=90.0) as client:
             response = await client.post(
