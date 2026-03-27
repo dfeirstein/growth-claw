@@ -8,6 +8,12 @@ import anthropic
 SONNET_MODEL = "claude-sonnet-4-6"
 OPUS_MODEL = "claude-opus-4-6"
 
+# Max output tokens per model (API requires this parameter)
+_MAX_TOKENS = {
+    SONNET_MODEL: 64000,
+    OPUS_MODEL: 128000,
+}
+
 # Purposes that benefit from Opus creativity
 _OPUS_PURPOSES = frozenset({
     "compose_sms",
@@ -44,13 +50,16 @@ class AnthropicProvider:
         self,
         prompt: str,
         temperature: float = 0.1,
-        max_tokens: int = 16384,
+        max_tokens: int = 0,
         purpose: str = "general",
     ) -> str:
         model = model_for_purpose(purpose)
+        # Use the model's full output capacity — API requires max_tokens but
+        # there's no reason to artificially cap it
+        actual_max = _MAX_TOKENS.get(model, 64000)
         message = await self.client.messages.create(
             model=model,
-            max_tokens=max_tokens,
+            max_tokens=actual_max,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
         )
