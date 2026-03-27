@@ -1,0 +1,26 @@
+Analyze these {{ patterns|length }} weekly pattern summaries from {{ month }}.
+
+{% for p in patterns %}
+### Week {{ p.period }}
+{{ p.summary_text }}
+Stats: {{ p.stats }}
+
+{% endfor %}
+
+Business type: {{ business_type }}
+Business description: {{ business_description }}
+
+Synthesize a STRATEGIC NARRATIVE for this business. What is the core growth thesis? What works? What doesn't? What should be tried next?
+
+Produce a JSON summary:
+{
+  "summary": "Three paragraphs: the business's growth thesis, what's working, and the biggest untapped opportunity",
+  "stats": {
+    "core_growth_thesis": "<one sentence>",
+    "top_3_winning_patterns": ["<string>", ...],
+    "top_3_opportunities": ["<string>", ...],
+    "channel_strategy": "<recommended channel mix>",
+    "timing_strategy": "<recommended timing approach>",
+    "segment_strategy": "<which segments to focus on>"
+  }
+}

@@ -1,0 +1,20 @@
+Analyze these {{ events|length }} outreach events for trigger "{{ trigger_name }}" on {{ date }}.
+
+Events:
+{% for e in events %}
+- Channel: {{ e.channel }} | Tone: {{ e.tone or 'unknown' }} | Delay: {{ e.send_delay_minutes }}min | Outcome: {{ e.outcome or 'pending' }}{% if e.time_to_convert_minutes %} | Converted in {{ e.time_to_convert_minutes|round(1) }}min{% endif %}
+{% endfor %}
+
+Produce a JSON summary with:
+{
+  "summary": "One paragraph describing what happened and what worked",
+  "stats": {
+    "total_sends": <int>,
+    "total_conversions": <int>,
+    "conversion_rate": <float 0-1>,
+    "best_performing_tone": "<string or null>",
+    "best_performing_channel": "<string or null>",
+    "optimal_delay_minutes": <int or null>,
+    "notable_patterns": ["<string>", ...]
+  }
+}

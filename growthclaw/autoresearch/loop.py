@@ -23,6 +23,7 @@ class AutoResearchLoop:
         self.llm = llm_client
         self.settings = settings
         self._memory = None
+        self._dag: object | None = None
 
     async def _get_memory(self):  # type: ignore[no-untyped-def]
         """Lazy-load memory manager."""
@@ -62,6 +63,15 @@ class AutoResearchLoop:
                 guardrails = await memory.recall(query="constraints and guardrails", category="guardrail", limit=5)
             except Exception as e:
                 logger.warning("Memory recall failed: %s", e)
+
+        # DAG-enhanced observe — get hierarchical performance summaries
+        dag_insights: list[str] = []
+        if self._dag:
+            try:
+                dag_nodes = await self._dag.get_research_context(current_metrics.get("name", ""))
+                dag_insights = [n.summary_text for n in dag_nodes]
+            except Exception as e:
+                logger.warning("DAG research context fetch failed: %s", e)
 
         logger.info(
             "AutoResearch OBSERVE: trigger=%s, history=%d, memories=%d",

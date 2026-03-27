@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 import asyncpg
@@ -20,6 +21,7 @@ async def run_nightly_sweep(
     concepts: BusinessConcepts,
     llm_client: LLMClient,
     memory: MemoryManager,
+    dag: object | None = None,
 ) -> dict[str, Any]:
     """Run the nightly strategic intelligence sweep.
 
@@ -81,6 +83,24 @@ async def run_nightly_sweep(
                 )
             except Exception as e:
                 logger.warning("Failed to store finding in memory: %s", e)
+
+    # Run DAG compaction: compact yesterday's Layer 0 events → Layer 1 per trigger
+    if dag:
+        from datetime import UTC
+        from uuid import UUID
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        try:
+            triggers = await _get_existing_triggers(internal_conn)
+            for t in triggers:
+                raw_id = t.get("id") or t.get("trigger_id", "")
+                if raw_id:
+                    try:
+                        await dag.compact_trigger_daily(UUID(str(raw_id)), today, llm_client)
+                    except Exception as compact_err:
+                        logger.warning("DAG compaction failed for trigger %s: %s", raw_id, compact_err)
+        except Exception as e:
+            logger.warning("DAG nightly compaction failed: %s", e)
 
     return result
 

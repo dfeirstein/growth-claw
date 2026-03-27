@@ -27,6 +27,8 @@ from growthclaw.models.trigger import TriggerEvent, TriggerRule
 from growthclaw.outreach import channel_resolver, journey_store, message_composer, sms_sender
 from growthclaw.outreach.email_sender import EmailSender
 from growthclaw.triggers import cdc_listener, trigger_evaluator, trigger_installer, trigger_proposer, trigger_store
+from growthclaw.memory.dag import GrowthDAG
+from growthclaw.memory.dag_models import SendOutcome as DAGSendOutcome
 from growthclaw.triggers.frequency_manager import check_global_frequency, record_send
 
 logger = logging.getLogger("growthclaw.main")
@@ -51,6 +53,7 @@ class GrowthClaw:
         self.internal_pool: asyncpg.Pool | None = None  # type: ignore[type-arg]
         self.concepts: BusinessConcepts | None = None
         self.funnel: Funnel | None = None
+        self.dag: GrowthDAG | None = None
 
     async def _get_usage_conn(self) -> asyncpg.Connection:  # type: ignore[type-arg]
         """Get a connection for LLM usage tracking."""
@@ -68,6 +71,9 @@ class GrowthClaw:
             self.internal_pool = await asyncpg.create_pool(
                 dsn=self.settings.growthclaw_database_url, min_size=2, max_size=10
             )
+        if not self.dag:
+            self.dag = GrowthDAG()
+            await self.dag.initialize()
 
     async def close(self) -> None:
         """Close all resources."""
@@ -599,6 +605,25 @@ class GrowthClaw:
                 # Track experiment send
                 if hasattr(experiment, "id") and hasattr(arm, "name"):
                     await experiment_store.record_send(iconn, experiment.id, arm.name)
+
+            # Store in Growth DAG (Layer 0 — raw send event)
+            if self.dag:
+                try:
+                    await self.dag.store_event(
+                        DAGSendOutcome(
+                            trigger_id=trigger.id,
+                            trigger_name=trigger.name,
+                            user_id=event.user_id,
+                            channel=trigger.channel,
+                            message_body=message_body,
+                            tone=brief.recommended_tone if brief else None,
+                            send_delay_minutes=trigger.delay_minutes,
+                            outcome=None,  # Updated later by outcome checker
+                            experiment_arm=ar_arm,
+                        )
+                    )
+                except Exception as dag_err:
+                    logger.warning("Failed to store DAG event: %s", dag_err)
 
             logger.info(
                 "Pipeline complete: user=%s trigger=%s channel=%s status=%s",
