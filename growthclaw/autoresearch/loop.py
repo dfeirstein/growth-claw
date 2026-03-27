@@ -130,6 +130,7 @@ class AutoResearchLoop:
             "past_hypotheses": [m.text for m in past_hypotheses] if past_hypotheses else [],
             "known_patterns": [m.text for m in patterns] if patterns else [],
             "guardrails": [m.text for m in guardrails] if guardrails else [],
+            "dag_insights": dag_insights,
         }
         hypothesis = await generate_hypothesis(current_metrics, history, self.llm, memory_context=memory_context)
         logger.info("AutoResearch HYPOTHESIZE: variable=%s", hypothesis.get("variable"))

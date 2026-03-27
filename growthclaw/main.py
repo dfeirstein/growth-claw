@@ -21,14 +21,14 @@ from growthclaw.discovery import (
 from growthclaw.experiments import experiment_manager, experiment_store, outcome_checker
 from growthclaw.intelligence import profile_analyzer, profile_builder, profile_store
 from growthclaw.llm.client import LLMClient, create_llm_client
+from growthclaw.memory.dag import GrowthDAG
+from growthclaw.memory.dag_models import SendOutcome as DAGSendOutcome
 from growthclaw.models.journey import Journey
 from growthclaw.models.schema_map import BusinessConcepts, Funnel
 from growthclaw.models.trigger import TriggerEvent, TriggerRule
 from growthclaw.outreach import channel_resolver, journey_store, message_composer, sms_sender
 from growthclaw.outreach.email_sender import EmailSender
 from growthclaw.triggers import cdc_listener, trigger_evaluator, trigger_installer, trigger_proposer, trigger_store
-from growthclaw.memory.dag import GrowthDAG
-from growthclaw.memory.dag_models import SendOutcome as DAGSendOutcome
 from growthclaw.triggers.frequency_manager import check_global_frequency, record_send
 
 logger = logging.getLogger("growthclaw.main")
@@ -335,6 +335,7 @@ class GrowthClaw:
         from growthclaw.autoresearch.loop import AutoResearchLoop
 
         self.autoresearch_loop = AutoResearchLoop(self.llm_client, self.settings)
+        self.autoresearch_loop._dag = self.dag
         self.scheduler.add_job(self._run_autoresearch, "interval", hours=6, id="autoresearch_loop")
 
         self.scheduler.start()
@@ -574,6 +575,7 @@ class GrowthClaw:
                     self.llm_client,
                     cta_link=self.settings.cta_url,
                     business_name=self.settings.business_name,
+                    dag=self.dag,
                 )
                 message_body = message
 
@@ -642,7 +644,7 @@ class GrowthClaw:
         try:
             async with self.customer_pool.acquire() as cconn:
                 async with self.internal_pool.acquire() as iconn:
-                    resolved = await outcome_checker.check_outcomes(cconn, iconn)
+                    resolved = await outcome_checker.check_outcomes(cconn, iconn, dag=self.dag)
             if resolved > 0:
                 logger.info("Resolved %d outcomes", resolved)
         except Exception as e:

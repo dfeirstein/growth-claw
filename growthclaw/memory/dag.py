@@ -102,15 +102,16 @@ async def _ensure_convergence(
     if len(summary_text) < source_text_len:
         return summary_text
 
-    # Level 2: Aggressive re-prompt
+    # Level 2: Aggressive re-prompt via template
     logger.warning(
         "Convergence violation: summary (%d) >= source (%d), re-prompting",
         len(summary_text), source_text_len,
     )
-    aggressive_prompt = (
-        f"This summary is too long ({len(summary_text)} chars). "
-        f"Condense into bullet points only, max {MAX_SUMMARY_CHARS} chars. "
-        f"Keep only key metrics and findings:\n\n{summary_text}"
+    aggressive_prompt = render_template(
+        "dag_convergence.j2",
+        summary_text=summary_text,
+        summary_length=len(summary_text),
+        max_chars=MAX_SUMMARY_CHARS,
     )
     try:
         result = await llm_client.call_json(aggressive_prompt, purpose=f"{purpose}_convergence")
@@ -204,6 +205,27 @@ class GrowthDAG:
             )
             await db.commit()
         logger.debug("Updated event %s outcome → %s", event_id, outcome)
+
+    async def update_event_outcome_by_user(
+        self, user_id: str, trigger_id: UUID, outcome: str, outcome_at: datetime | None = None
+    ) -> None:
+        """Update the most recent Layer 0 event for a user+trigger with its outcome."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """
+                UPDATE dag_events SET outcome = ?, outcome_at = ?
+                WHERE user_id = ? AND trigger_id = ? AND outcome IS NULL
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (
+                    outcome,
+                    (outcome_at or datetime.now()).isoformat(),
+                    user_id,
+                    str(trigger_id),
+                ),
+            )
+            await db.commit()
+        logger.debug("Updated event outcome for user=%s trigger=%s → %s", user_id, trigger_id, outcome)
 
     # -------------------------------------------------------------------------
     # Layer 1 — Daily trigger compaction (Layer 0 → Layer 1)

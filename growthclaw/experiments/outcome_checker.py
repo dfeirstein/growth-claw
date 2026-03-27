@@ -45,10 +45,12 @@ async def check_outcomes(
                     logger.info("Conversion detected: user=%s, journey=%s", journey.user_id, journey.id)
                     resolved += 1
 
-                    # Update DAG Layer 0 event outcome
-                    if dag and hasattr(dag, "update_event_outcome"):
+                    # Update DAG Layer 0 event outcome (match by user_id + trigger_id)
+                    if dag and hasattr(dag, "update_event_outcome_by_user"):
                         try:
-                            await dag.update_event_outcome(journey.id, "converted")
+                            await dag.update_event_outcome_by_user(
+                                journey.user_id, journey.trigger_id, "converted"
+                            )
                         except Exception as dag_err:
                             logger.warning("DAG outcome update failed: %s", dag_err)
 
