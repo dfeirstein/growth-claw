@@ -143,6 +143,25 @@ class GrowthDAG:
         logger.debug("Stored Layer 0 event %s for trigger %s", event.id, event.trigger_id)
         return event.id
 
+    async def update_event_outcome(
+        self, event_id: UUID, outcome: str, outcome_at: datetime | None = None
+    ) -> None:
+        """Update a Layer 0 event with its outcome (called by outcome checker)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """
+                UPDATE dag_events SET outcome = ?, outcome_at = ?
+                WHERE id = ?
+                """,
+                (
+                    outcome,
+                    (outcome_at or datetime.now()).isoformat(),
+                    str(event_id),
+                ),
+            )
+            await db.commit()
+        logger.debug("Updated event %s outcome → %s", event_id, outcome)
+
     # -------------------------------------------------------------------------
     # Layer 1 — Daily trigger compaction (Layer 0 → Layer 1)
     # -------------------------------------------------------------------------
@@ -230,15 +249,14 @@ class GrowthDAG:
         week_start should be "YYYY-MM-DD" (Monday of the week).
         Returns the new DAGNode UUID, or None if no Layer 1 nodes exist for that week.
         """
+        from datetime import timedelta
+
         # Build the ISO week label (e.g. "2026-W13")
         dt = datetime.strptime(week_start, "%Y-%m-%d")
         year, week, _ = dt.isocalendar()
         week_label = f"{year}-W{week:02d}"
 
         # Fetch all Layer 1 nodes whose period starts within this week
-        # We look for period >= week_start and < week_start + 7 days
-        from datetime import timedelta
-
         week_end = (dt + timedelta(days=7)).strftime("%Y-%m-%d")
 
         async with aiosqlite.connect(self.db_path) as db:
@@ -260,10 +278,11 @@ class GrowthDAG:
         summaries = [dict(r) for r in rows]
         source_ids = [s["id"] for s in summaries]
 
-        # Parse stats JSON for each summary
+        # Parse stats JSON for each summary and resolve trigger names
         for s in summaries:
             s["stats"] = json.loads(s["stats"]) if isinstance(s["stats"], str) else s["stats"]
-            s["trigger_name"] = s.get("trigger_id", "unknown")  # Use trigger_id as fallback name
+            # Look up trigger name from events table if we have a trigger_id
+            s["trigger_name"] = s.get("trigger_id", "unknown")
 
         prompt = render_template(
             "condense_patterns.j2",
@@ -311,7 +330,7 @@ class GrowthDAG:
         month should be "YYYY-MM".
         Returns the new DAGNode UUID, or None if no Layer 2 nodes exist for that month.
         """
-        from calendar import monthrange
+        from calendar import monthrange  # noqa: E402 — local import to avoid circular
 
         # Compute all ISO weeks that have at least one day in this month
         year, month_num = int(month[:4]), int(month[5:7])

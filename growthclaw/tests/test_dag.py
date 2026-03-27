@@ -1,18 +1,17 @@
 """Tests for the Growth DAG hierarchical memory system."""
+# ruff: noqa: E501 — SQL fixture strings exceed 120 chars for readability
 
 from __future__ import annotations
 
 import json
-import tempfile
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
 
 from growthclaw.memory.dag import GrowthDAG
-from growthclaw.memory.dag_models import DAGNode, SendOutcome
-
+from growthclaw.memory.dag_models import SendOutcome
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -202,11 +201,25 @@ async def test_condense_patterns_weekly_creates_layer2_node(dag):
     async with aiosqlite.connect(dag.db_path) as db:
         await db.execute(
             "INSERT INTO dag_nodes (id, depth, trigger_id, period, summary_text, source_node_ids, stats, created_at) VALUES (?, 1, ?, ?, ?, '[]', ?, ?)",
-            (node1_id, str(uuid4()), "2026-03-23", "Trigger A performed well on Monday.", json.dumps({"total_sends": 5, "conversion_rate": 0.4}), datetime.now().isoformat()),
+            (
+                node1_id,
+                str(uuid4()),
+                "2026-03-23",
+                "Trigger A performed well on Monday.",
+                json.dumps({"total_sends": 5, "conversion_rate": 0.4}),
+                datetime.now().isoformat(),
+            ),
         )
         await db.execute(
             "INSERT INTO dag_nodes (id, depth, trigger_id, period, summary_text, source_node_ids, stats, created_at) VALUES (?, 1, ?, ?, ?, '[]', ?, ?)",
-            (node2_id, str(uuid4()), "2026-03-24", "Trigger B had low conversion on Tuesday.", json.dumps({"total_sends": 5, "conversion_rate": 0.2}), datetime.now().isoformat()),
+            (
+                node2_id,
+                str(uuid4()),
+                "2026-03-24",
+                "Trigger B had low conversion on Tuesday.",
+                json.dumps({"total_sends": 5, "conversion_rate": 0.2}),
+                datetime.now().isoformat(),
+            ),
         )
         await db.commit()
 
@@ -248,11 +261,23 @@ async def test_synthesize_strategy_monthly_creates_layer3_node(dag):
     async with aiosqlite.connect(dag.db_path) as db:
         await db.execute(
             "INSERT INTO dag_nodes (id, depth, trigger_id, period, summary_text, source_node_ids, stats, created_at) VALUES (?, 2, NULL, ?, ?, '[]', ?, ?)",
-            (node1_id, "2026-W12", "Week 12 showed strong SMS performance.", json.dumps({"overall_conversion_rate": 0.4}), datetime.now().isoformat()),
+            (
+                node1_id,
+                "2026-W12",
+                "Week 12 showed strong SMS performance.",
+                json.dumps({"overall_conversion_rate": 0.4}),
+                datetime.now().isoformat(),
+            ),
         )
         await db.execute(
             "INSERT INTO dag_nodes (id, depth, trigger_id, period, summary_text, source_node_ids, stats, created_at) VALUES (?, 2, NULL, ?, ?, '[]', ?, ?)",
-            (node2_id, "2026-W13", "Week 13 showed email improving.", json.dumps({"overall_conversion_rate": 0.45}), datetime.now().isoformat()),
+            (
+                node2_id,
+                "2026-W13",
+                "Week 13 showed email improving.",
+                json.dumps({"overall_conversion_rate": 0.45}),
+                datetime.now().isoformat(),
+            ),
         )
         await db.commit()
 
