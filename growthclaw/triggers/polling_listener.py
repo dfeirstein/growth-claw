@@ -114,6 +114,9 @@ class PollingListener(EventSource):
             last_seen = wm["last_seen_at"]
 
             try:
+                # Strip timezone from watermark — customer DB may use naive timestamps
+                query_ts = last_seen.replace(tzinfo=None) if hasattr(last_seen, "replace") else last_seen
+
                 async with self._customer_pool.acquire() as cconn:
                     # Safe identifier quoting
                     query = (
@@ -121,7 +124,7 @@ class PollingListener(EventSource):
                         f'WHERE "{_safe_ident(ts_col)}" > $1 '
                         f'ORDER BY "{_safe_ident(ts_col)}" LIMIT 100'
                     )
-                    rows = await cconn.fetch(query, last_seen)
+                    rows = await cconn.fetch(query, query_ts)
 
                 if not rows:
                     continue
