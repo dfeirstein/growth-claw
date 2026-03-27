@@ -101,6 +101,23 @@ async def load(conn: asyncpg.Connection, database_url: str) -> SchemaMap | None:
     )
     if not row:
         return None
+
+    import json
+
+    def _parse_json(val: object) -> dict | list | None:
+        """Parse a JSONB value — asyncpg may return str or dict depending on codec."""
+        if val is None:
+            return None
+        if isinstance(val, (dict, list)):
+            return val
+        if isinstance(val, str):
+            return json.loads(val)
+        return val  # type: ignore[return-value]
+
+    concepts_data = _parse_json(row["concepts"])
+    relationships_data = _parse_json(row["relationships"])
+    funnel_data = _parse_json(row["funnel"])
+
     return SchemaMap(
         id=row["id"],
         version=row["version"],
@@ -108,10 +125,10 @@ async def load(conn: asyncpg.Connection, database_url: str) -> SchemaMap | None:
         business_name=row["business_name"] or "",
         business_type=row["business_type"] or "",
         tables=row["tables"],
-        concepts=BusinessConcepts.model_validate(row["concepts"]) if row["concepts"] else None,
-        relationships=RelationshipGraph.model_validate(row["relationships"])
-        if row["relationships"]
+        concepts=BusinessConcepts.model_validate(concepts_data) if concepts_data else None,
+        relationships=RelationshipGraph.model_validate(relationships_data)
+        if relationships_data
         else RelationshipGraph(),
-        funnel=Funnel.model_validate(row["funnel"]) if row["funnel"] else Funnel(),
+        funnel=Funnel.model_validate(funnel_data) if funnel_data else Funnel(),
         raw_statistics=row["raw_statistics"],
     )
