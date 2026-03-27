@@ -117,6 +117,8 @@ async def load(conn: asyncpg.Connection, database_url: str) -> SchemaMap | None:
     concepts_data = _parse_json(row["concepts"])
     relationships_data = _parse_json(row["relationships"])
     funnel_data = _parse_json(row["funnel"])
+    tables_data = _parse_json(row["tables"])
+    stats_data = _parse_json(row["raw_statistics"])
 
     return SchemaMap(
         id=row["id"],
@@ -124,11 +126,11 @@ async def load(conn: asyncpg.Connection, database_url: str) -> SchemaMap | None:
         database_url_hash=row["database_url_hash"],
         business_name=row["business_name"] or "",
         business_type=row["business_type"] or "",
-        tables=row["tables"],
+        tables=tables_data or [],
         concepts=BusinessConcepts.model_validate(concepts_data) if concepts_data else None,
         relationships=RelationshipGraph.model_validate(relationships_data)
         if relationships_data
         else RelationshipGraph(),
         funnel=Funnel.model_validate(funnel_data) if funnel_data else Funnel(),
-        raw_statistics=row["raw_statistics"],
+        raw_statistics=stats_data,
     )
