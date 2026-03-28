@@ -557,22 +557,39 @@ AutoGrow is the brain. You own everything else.</p>
       </div>
     </section>
 
-    <!-- ─── Section 5: Numbers ───────────────── -->
-    <section id="numbers">
-      <div class="stats">
-        <div class="stat">
-          <div class="stat-number hero-stat">81.7%</div>
-          <div class="stat-label">drop-off found in 4 minutes</div>
-        </div>
-        <div class="stat">
-          <div class="stat-number">0</div>
-          <div class="stat-label">employees required</div>
-        </div>
-        <div class="stat">
-          <div class="stat-number">&#x221E;</div>
-          <div class="stat-label">experiments while you sleep</div>
-        </div>
+    <!-- ─── Section 5: Compounding ───────────── -->
+    <section id="compounding">
+      <h2>It gets smarter every night</h2>
+      <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:14px;">
+        <thead>
+          <tr style="border-bottom:1px solid #333;">
+            <th style="text-align:left; padding:10px 12px; color:var(--text-dim); font-size:12px; letter-spacing:1px; text-transform:uppercase;"></th>
+            <th style="text-align:left; padding:10px 12px; color:var(--text-dim); font-size:12px;">Day 1</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--text-dim); font-size:12px;">Day 30</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--text-dim); font-size:12px;">Day 100</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--accent); font-size:12px;">Day 365</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:10px 12px; color:var(--text);"><strong>Experiments run</strong></td><td style="padding:10px 12px;">5</td><td style="padding:10px 12px;">~50</td><td style="padding:10px 12px;">~150</td><td style="padding:10px 12px; color:var(--accent); font-weight:700;">~600</td></tr>
+          <tr><td style="padding:10px 12px; color:var(--text);"><strong>Winning variants</strong></td><td style="padding:10px 12px;">0</td><td style="padding:10px 12px;">~12</td><td style="padding:10px 12px;">~40</td><td style="padding:10px 12px; color:var(--accent); font-weight:700;">~150</td></tr>
+          <tr><td style="padding:10px 12px; color:var(--text);"><strong>Activation lift</strong></td><td style="padding:10px 12px;">baseline</td><td style="padding:10px 12px;">+5-10%</td><td style="padding:10px 12px;">+15-25%</td><td style="padding:10px 12px; color:var(--accent); font-weight:700;">+25-40%</td></tr>
+          <tr><td style="padding:10px 12px; color:var(--text);"><strong>Churn reduction</strong></td><td style="padding:10px 12px;">baseline</td><td style="padding:10px 12px;">-3-8%</td><td style="padding:10px 12px;">-10-18%</td><td style="padding:10px 12px; color:var(--accent); font-weight:700;">-20-35%</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px; color:var(--text-dim); font-style:italic;">Projected from Jeevz pilot + industry benchmarks.</p>
+    </section>
+
+    <!-- ─── Section 5b: Network ──────────────── -->
+    <section id="network">
+      <h2>Every customer makes every other customer smarter</h2>
+      <p style="margin-bottom: 20px;">Every AutoGrow instance runs experiments. Anonymized outcomes feed a shared intelligence layer. Customer 500 inherits the learnings of 1-499 on day one.</p>
+      <div class="diff-block">
+        <p style="font-family:var(--font-mono); font-size:14px; white-space:pre-line;">1 customer     →  5 experiments
+100 customers  →  50,000 experiments
+1,000 customers → <span class="g">5,000,000 experiments</span></p>
       </div>
+      <p style="margin-top:16px; font-weight:600; color:var(--text);">The code is open source. The intelligence is not.</p>
     </section>
 
     <!-- ─── Section 6: Quickstart ────────────── -->
@@ -668,20 +685,31 @@ autogrow intelligence">copy</button>
       <p class="arch-caption">The nervous system runs 2,880 times a day for free. The brain wakes up when creativity and strategy are needed.</p>
     </section>
 
+    <!-- ─── Section: What you stop doing ────── -->
+    <section id="replaces">
+      <h2>What you stop doing</h2>
+      <p style="margin-bottom: 20px;">Tools like Klaviyo, Braze, and Customer.io automate the send. You still build the workflows, write the templates, configure the segments, and run the tests. AutoGrow does all of it.</p>
+      <div class="diff-block">
+        <p style="font-family:var(--font-mono); font-size:14px; white-space:pre-line; line-height:2;"><span class="d">✗</span> Define funnel stages manually
+<span class="d">✗</span> Build trigger workflows
+<span class="d">✗</span> Write message templates
+<span class="d">✗</span> Configure audience segments
+<span class="d">✗</span> Set up A/B tests
+<span class="d">✗</span> Analyze results and iterate
+<span class="g">✓</span> Connect your database. AutoGrow handles the rest.</p>
+      </div>
+    </section>
+
     <!-- ─── Section: What's Coming ──────────── -->
     <section id="coming-soon">
       <h2>What's next</h2>
       <div class="diff-block">
         <h3>Managed Service</h3>
-        <p>Don't want to self-host? We'll run AutoGrow for you. Connect your database, we handle everything — optimization, monitoring, experiments. You get a Slack channel with your agent and a dashboard. Coming soon.</p>
-      </div>
-      <div class="diff-block">
-        <h3>Cloud Intelligence</h3>
-        <p>Every AutoGrow instance generates experiment results. Anonymized and aggregated, they feed a shared intelligence network. A new e-commerce store on Day 1 already knows what tone, timing, and offer converts best — because hundreds of other stores already tested it. Every customer makes every other customer smarter.</p>
+        <p>Don't want to self-host? We'll run AutoGrow for you. Connect your database, we handle everything. Coming soon.</p>
       </div>
       <div class="diff-block">
         <h3>Push + In-App</h3>
-        <p>SMS and email are live today. Push notifications and in-app messaging are coming. AutoResearch will test across all four channels automatically — learning which one converts best for each customer segment.</p>
+        <p>SMS and email are live today. Push notifications and in-app messaging are coming. AutoResearch will test across all four channels automatically.</p>
       </div>
     </section>
 
